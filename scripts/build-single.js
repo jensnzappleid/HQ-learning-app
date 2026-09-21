@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(root, ENTRY), 'utf8');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 let out = html
   .replace(/<link rel="stylesheet" href="css\/app.css">/, () => `<style>\n${read('css/app.css')}\n</style>`)
-  .replace(/<script src="([^"]+)"><\/script>/g, (m, src) => `<script>\n${read(src)}\n</script>`)
+  .replace(/<script src="([^"]+)"><\/script>/g, (m, src) => (/^https?:\/\//.test(src) ? m : `<script>\n${read(src)}\n</script>`))
   .replace(/<link rel="manifest"[^>]*>\n?/, '')
   .replace(/<link rel="apple-touch-icon"[^>]*>\n?/, '')
   .replace(/<link rel="icon" href="([^"]+)"[^>]*>\n?/, (m, href) => `<link rel="icon" href="data:image/svg+xml;base64,${Buffer.from(read(href)).toString('base64')}">\n`);

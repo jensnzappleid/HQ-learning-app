@@ -44,7 +44,8 @@ window.HL = window.HL || {};
     // the candy jar: each finished practice pays 0-3 candies; `candyGoal` candies win the prize
     candy: { jar: 0, lifetime: 0, earned: [], paidDay: '', paidTopics: [] },   // earned: [{date, prize, paid}]
     settings: { minutes: 25, questions: 20, keypad: true, sounds: true, theme: 'system', name: 'Harper', bigText: false,
-                candyGoal: 9, prize: '$5', minQuestions: 8, breaks: true, wordRatio: 0.35, startLevel: 1, candySplit: true, settingsVersion: 5 },
+                candyGoal: 9, prize: '$5', minQuestions: 8, breaks: true, wordRatio: 0.35, startLevel: 1, candySplit: true,
+                syncCode: '', settingsVersion: 5 },
   });
   let data = blank();
   const readJson = (key) => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } };
@@ -214,6 +215,16 @@ window.HL = window.HL || {};
     get: () => data,
     settings: () => data.settings,
     setSetting(k, v) { data.settings[k] = v; save(); },
+    /** a short code so a parent's device can join this child's shared working pad — generated
+     *  once and kept forever (same code every time, shared between maths and science). */
+    syncCode() {
+      if (!data.settings.syncCode) {
+        const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let s = ''; for (let i = 0; i < 4; i++) s += CHARS[Math.floor(Math.random() * CHARS.length)];
+        data.settings.syncCode = s; save();
+      }
+      return data.settings.syncCode;
+    },
     topic(id) { return data.topics[id] || (data.topics[id] = { attempts: 0, correct: 0, firstTry: 0, level: 1, lastPractised: null, mastery: 0 }); },
     /** record one question result */
     record(id, { correct, firstTry, level }) {

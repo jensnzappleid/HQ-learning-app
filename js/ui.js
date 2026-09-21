@@ -37,6 +37,8 @@ window.HL = window.HL || {};
     <span class="btn btn-soft">Practise</span></button>`;
 
   let session = null, timer = null, lastSummary = null, lastAward = null;
+  let room = null;   // the shared working-pad room for the current practice session, if any
+  function leaveRoom() { if (room) { room.leave(); room = null; } }
   const praise = ['Ka pai!', 'Yes! Nailed it.', 'Brilliant!', 'That is right!', 'Super!', 'Tumeke!', 'You got it!', 'Lovely work!'];
 
   /* ---------- router ---------- */
@@ -45,9 +47,10 @@ window.HL = window.HL || {};
     const h = (location.hash || '#home').slice(1);
     const [page, arg] = h.split('/');
     if (page !== 'practice' && timer) { clearInterval(timer); timer = null; }
-    if (page !== 'practice' && page !== 'summary' && session && !session.isFinished()) { /* leaving a live session */ session = null; }
+    if (page !== 'practice' && page !== 'summary' && session && !session.isFinished()) { /* leaving a live session */ leaveRoom(); session = null; }
+    if (page !== 'practice' && page !== 'join' && !session && room) { /* leaving the join screen's shared pad */ leaveRoom(); }
     if (page === 'start') return startFromHash(arg, h.split('/')[2]);
-    const map = { home, topics, learn, practice, summary, progress, settings, candy, money, rescue, review, break: () => wiggleBreak(true) };
+    const map = { home, topics, learn, practice, summary, progress, settings, candy, money, rescue, review, join: joinScreen, break: () => wiggleBreak(true) };
     (map[page] || home)(arg);
     window.scrollTo({ top: 0 });
   }
@@ -425,6 +428,7 @@ window.HL = window.HL || {};
       // after that she gets no content, just a nudge for how many steps a full solution takes
       const hintKey = q.skill || (q.topicId + ':word');
       const guided = !S.hintSeen(hintKey);
+      const syncOn = HL.sync && HL.sync.available();
       workingHtml = `<div class="working-row">
         <div class="working-head"><label for="workpad">Show your working${!guided ? `<span class="hint-note">(aim for about ${Math.max(1, (q.working || []).length)} steps)</span>` : ''}</label>
           <div class="pad-tools">
@@ -435,6 +439,7 @@ window.HL = window.HL || {};
           </div>
         </div>
         ${guided ? `<div class="hint-guide">💡 <b>First step:</b> ${q.hint || 'Read the question carefully and plan your steps before you start.'}</div>` : ''}
+        ${syncOn ? `<div class="sync-chip" id="syncChip">🔗 Share code <b>${esc(S.syncCode())}</b> · <span id="syncStatus">⚪ waiting for someone to join</span></div>` : ''}
         <canvas id="workpad" class="workpad" aria-label="Working-out pad — draw your steps here"></canvas>
       </div>`;
       if (guided) S.markHintSeen(hintKey);
@@ -480,20 +485,38 @@ window.HL = window.HL || {};
     return $('#ans') ? $('#ans').value : '';
   }
   /* ---------- word-problem working pad: a small shared whiteboard, not just a text box, so a
-   * grown-up sitting alongside her can rub out a wrong step and draw the right one on the spot */
+   * grown-up sitting alongside her can rub out a wrong step and draw the right one on the spot.
+   * When a Firebase project is configured (HL.syncConfig), the SAME pad also mirrors live to
+   * anyone who joins with this device's share code (see joinScreen()) — same drawing code either
+   * way, the room is just an optional relay for the strokes. */
   let padMode = 'pen', padHasInk = false;
-  function bindWorkpad() {
-    const canvas = $('#workpad'); if (!canvas) return;
+  function strokeStyleFor(mode) {
+    const style = getComputedStyle(document.documentElement);
+    const inkColor = (style.getPropertyValue('--ink') || '#333').trim() || '#333';
+    const fixColor = (style.getPropertyValue('--good') || '#2FA97A').trim() || '#2FA97A';
+    return { color: mode === 'fix' ? fixColor : inkColor, width: mode === 'eraser' ? 18 : 3, erase: mode === 'eraser' };
+  }
+  function drawSeg(ctx, seg) {
+    const st = strokeStyleFor(seg.mode);
+    ctx.globalCompositeOperation = st.erase ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = st.color; ctx.lineWidth = st.width;
+    ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke();
+  }
+  function updateSyncStatus(present) {
+    const el = $('#syncStatus'); if (!el) return;
+    el.textContent = present ? '🟢 connected' : '⚪ waiting for someone to join';
+  }
+  function sizeCanvas(canvas) {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round((rect.height || 170) * dpr));
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const style = getComputedStyle(document.documentElement);
-    const inkColor = (style.getPropertyValue('--ink') || '#333').trim() || '#333';
-    const fixColor = (style.getPropertyValue('--good') || '#2FA97A').trim() || '#2FA97A';
-    padMode = 'pen'; padHasInk = false;
+    return ctx;
+  }
+  /** pointer drawing + tool switching, shared by Harper's practice pad and the joiner's mirror pad */
+  function bindPadPointers(canvas, ctx) {
     let drawing = false, lastX = 0, lastY = 0;
     const posFromEvent = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     canvas.addEventListener('pointerdown', (e) => {
@@ -505,10 +528,9 @@ window.HL = window.HL || {};
     canvas.addEventListener('pointermove', (e) => {
       if (!drawing) return;
       const [x, y] = posFromEvent(e);
-      ctx.globalCompositeOperation = padMode === 'eraser' ? 'destination-out' : 'source-over';
-      ctx.strokeStyle = padMode === 'fix' ? fixColor : inkColor;
-      ctx.lineWidth = padMode === 'eraser' ? 18 : 3;
-      ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+      const seg = { x1: lastX, y1: lastY, x2: x, y2: y, mode: padMode };
+      drawSeg(ctx, seg);
+      if (room) room.sendStroke(seg);
       lastX = x; lastY = y;
       e.preventDefault();
     });
@@ -518,11 +540,89 @@ window.HL = window.HL || {};
     canvas.addEventListener('pointercancel', stop);
     document.querySelectorAll('.padtool').forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (btn.dataset.pad === 'clear') { ctx.clearRect(0, 0, canvas.width, canvas.height); padHasInk = false; return; }
+        if (btn.dataset.pad === 'clear') {
+          if (room) room.sendClear(); else ctx.clearRect(0, 0, canvas.width, canvas.height);
+          padHasInk = false; return;
+        }
         padMode = btn.dataset.pad;
         document.querySelectorAll('.padtool').forEach((x) => x.classList.toggle('on', x.dataset.pad === padMode));
       });
     });
+  }
+  function bindWorkpad() {
+    const canvas = $('#workpad'); if (!canvas) return;
+    const ctx = sizeCanvas(canvas);
+    padMode = 'pen'; padHasInk = false;
+    if (HL.sync && HL.sync.available()) {
+      if (!room) room = HL.sync.connect(S.syncCode());
+      if (room) {
+        room.onPeer = updateSyncStatus;
+        room.onClearLocal = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+        room.onStroke = (seg) => drawSeg(ctx, seg);
+        room.startQuestion();
+        updateSyncStatus(room.peerSeen);
+      }
+    }
+    bindPadPointers(canvas, ctx);
+  }
+
+  /* ---------- join a shared pad: a parent's own device, no quiz around it, just the pad ---------- */
+  function joinScreen() {
+    if (!(HL.sync && HL.sync.available())) {
+      render(`<div class="screen">
+        ${topbar('home', 'Join a shared pad')}
+        <div class="card"><h2>Not available right now</h2><p style="margin-top:6px">This needs an internet connection to reach the other device. Try again when you are back online.</p></div>
+      </div>`);
+      return;
+    }
+    let saved = ''; try { saved = localStorage.getItem('hl-join-code') || ''; } catch (e) {}
+    render(`<div class="screen">
+      ${topbar('home', 'Join a shared pad')}
+      <h1>Join a shared pad</h1>
+      <p class="sub">Ask them to open a word problem — the code shows above the working pad. Type it in below to see the same pad live, and draw on it together.</p>
+      <div class="card">
+        <div class="answer-row"><label for="joincode">Code</label><input id="joincode" class="answer-input" style="text-transform:uppercase;letter-spacing:.15em" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="A3F9" value="${esc(saved)}"></div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn btn-primary btn-lg" data-act="join-go">Connect</button></div>
+      </div>
+    </div>`);
+    const inp = $('#joincode'); if (inp) setTimeout(() => inp.focus(), 50);
+  }
+  function joinGo() {
+    const inp = $('#joincode'); const code = ((inp && inp.value) || '').trim().toUpperCase();
+    if (code.length !== 4) { toast('That code should be 4 letters/numbers.'); return; }
+    try { localStorage.setItem('hl-join-code', code); } catch (e) {}
+    render(`<div class="screen">
+      ${topbar('join', 'Shared pad')}
+      <h1>Shared pad</h1>
+      <div class="working-row">
+        <div class="working-head"><label>Draw together</label>
+          <div class="pad-tools">
+            <button type="button" class="padtool on" data-pad="pen">✏️ Pen</button>
+            <button type="button" class="padtool" data-pad="fix">🟢 Correct it</button>
+            <button type="button" class="padtool" data-pad="eraser">🧽 Eraser</button>
+            <button type="button" class="padtool" data-pad="clear">Clear</button>
+          </div>
+        </div>
+        <div class="sync-chip" id="syncChip">🔗 Code <b>${esc(code)}</b> · <span id="syncStatus">⚪ connecting…</span></div>
+        <canvas id="workpad" class="workpad joinpad" aria-label="Shared working-out pad"></canvas>
+      </div>
+      <p class="sub" id="joinHint">Waiting for a word question to start on the other device…</p>
+      <div class="btn-row"><button class="btn" data-go="join">Use a different code</button></div>
+    </div>`);
+    bindJoinPad(code);
+  }
+  function bindJoinPad(code) {
+    leaveRoom();
+    room = HL.sync.connect(code);
+    if (!room) { toast('That did not work — check the code and try again.'); return go('join'); }
+    const canvas = $('#workpad'); if (!canvas) return;
+    const ctx = sizeCanvas(canvas);
+    padMode = 'pen';
+    room.onPeer = updateSyncStatus;
+    room.onClearLocal = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); const h = $('#joinHint'); if (h) h.hidden = false; };
+    room.onStroke = (seg) => { drawSeg(ctx, seg); const h = $('#joinHint'); if (h) h.hidden = true; };
+    updateSyncStatus(room.peerSeen);
+    bindPadPointers(canvas, ctx);
   }
   function check() {
     const q = session.current; if (!q) return;
@@ -634,6 +734,7 @@ window.HL = window.HL || {};
   }
   function endSession() {
     if (timer) { clearInterval(timer); timer = null; }
+    leaveRoom();
     if (!session) return go('home');
     const noReward = !!session.noReward;
     lastSummary = session.summary();
@@ -806,6 +907,13 @@ window.HL = window.HL || {};
         <div class="setting"><div class="lbl">${jarTitle()} right now<small>${S.candyState().jar} of ${goal()} · ${S.candyState().lifetime} collected altogether · ${S.unpaidRewards()} prize(s) waiting</small></div><button class="btn" data-go="candy">Open</button></div>
         ${S.otherJars().map((o) => `<div class="setting"><div class="lbl">${subjectWord(o.subject)} candy jar<small>${o.jar} of ${o.goal} · ${o.lifetime} collected altogether · ${o.unpaid} prize(s) waiting — open the ${subjectWord(o.subject)} app to manage it</small></div></div>`).join('')}
       </div>
+      <div class="card"><h2>Shared working pad</h2>
+        ${HL.sync && HL.sync.available()
+          ? `<p style="margin-top:6px;color:var(--muted)">When ${esc(name())} opens a word problem, this code appears above her working pad. Type it into another device to see the same pad live and draw on it together.</p>
+             <div class="setting"><div class="lbl">This device's code</div><b style="font-size:1.3rem;letter-spacing:.1em">${esc(S.syncCode())}</b></div>
+             <div class="btn-row"><button class="btn" data-go="join">Join a shared pad</button></div>`
+          : `<p style="margin-top:6px;color:var(--muted)">Not available right now — this needs an internet connection.</p>`}
+      </div>
       <div class="card card-soft"><h2>For parents</h2>
         <p style="margin-top:6px;color:var(--muted)">Progress and the candy jar are saved <b>in this browser, for this address</b>. Keep opening the app from the <b>same link</b> and nothing is ever lost — updates to the app do not touch the jar. What does clear it: opening a different link or a downloaded copy of the file, clearing browsing data, or using a private window.</p>
         <p style="margin-top:8px;color:var(--muted)">Right now: <b>${S.candyState().jar} of ${goal()}</b> in the ${subjectWord(HL.subject).toLowerCase()} jar${S.otherJars().map((o) => ` and <b>${o.jar} of ${o.goal}</b> in the ${subjectWord(o.subject).toLowerCase()} one`).join('')}, ${S.candyState().lifetime} collected in ${subjectWord(HL.subject).toLowerCase()} altogether, ${S.get().sessions.length} practice${S.get().sessions.length === 1 ? '' : 's'} recorded.</p>
@@ -932,6 +1040,7 @@ window.HL = window.HL || {};
       const p = presets().find((x) => x.id === b.dataset.preset);
       return p ? startMix(p.topicIds, p.name + ' — ' + p.sub) : toast('That mix is not available.');
     }
+    if (act === 'join-go') return joinGo();
     if (act === 'mixed') return startSession({ mode: 'mixed', topicIds: HL.topicList().map((t) => t.id), label: 'Mixed practice' });
     if (act === 'strand') return startSession({ mode: 'strand', topicIds: HL.topicList().filter((t) => t.strand === b.dataset.strand).map((t) => t.id), label: HL.strands[b.dataset.strand].name });
     if (act === 'topic') return startSession({ mode: 'topic', topicIds: [b.dataset.topic], label: HL.topics[b.dataset.topic].name });
@@ -961,7 +1070,7 @@ window.HL = window.HL || {};
     }
     if (act === 'print') { document.querySelectorAll('.m-working').forEach((d) => (d.open = true)); return setTimeout(() => window.print(), 60); }
     if (act === 'break-done') { HL.sound.music.stop(); if (timer) { clearInterval(timer); timer = null; } return go('home'); }
-    if (act === 'quit') { const short = session ? session.shortBy() : 0; if (!session || session.count === 0 || confirm(short ? `You need ${short} more question${short === 1 ? '' : 's'} for this practice to earn candies. Stop anyway?` : 'Finish this practice now?')) { if (session && session.count) endSession(); else { session = null; go('home'); } } return; }
+    if (act === 'quit') { const short = session ? session.shortBy() : 0; if (!session || session.count === 0 || confirm(short ? `You need ${short} more question${short === 1 ? '' : 's'} for this practice to earn candies. Stop anyway?` : 'Finish this practice now?')) { if (session && session.count) endSession(); else { leaveRoom(); session = null; go('home'); } } return; }
     if (act === 'keypad') { S.setSetting('keypad', !S.settings().keypad); return practice(); }
     if (act === 'paid') { const i = Number(b.dataset.i); const r = S.candyState().earned[i]; S.markRewardPaid(i, !(r && r.paid)); return (location.hash || '').indexOf('money') > 0 ? money() : candy(); }
     if (act === 'who') {

@@ -456,7 +456,11 @@ input.text { font: inherit; font-weight: 800; padding: 10px 14px; border-radius:
 .padtool.on[data-pad="eraser"] { border-color: var(--muted); color: var(--ink); background: var(--surface-2); }
 .workpad { display: block; width: 100%; max-width: 100%; height: 170px; border-radius: var(--r-md);
   border: 3px solid var(--line); background: var(--surface); touch-action: none; cursor: crosshair; }
+.workpad.joinpad { height: 260px; }
 .working-empty-hint { margin-top: 4px; font-size: .78rem; color: var(--faint); }
+.sync-chip { margin: 8px 0 6px; font-size: .8rem; color: var(--muted); background: var(--surface-2);
+  border-radius: 999px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px; }
+.sync-chip b { color: var(--ink); letter-spacing: .08em; }
 .her-working { margin-top: 10px; }
 .her-working .m-label { display: block; margin-bottom: 4px; }
 .her-working img { max-width: 100%; border-radius: var(--r-sm); border: 1px solid var(--line); display: block; background: #fff; }

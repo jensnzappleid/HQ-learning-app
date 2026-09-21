@@ -28,6 +28,12 @@
 <script src="js/core/mark.js"></script>
 <script src="js/core/store.js"></script>
 <script src="js/core/engine.js"></script>
+<!-- optional: powers the cross-device shared working pad. Loaded from Google's CDN, so it simply
+     fails to load (silently — sync.js guards every call) when offline or the CDN is blocked. -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="js/core/sync-config.js"></script>
+<script src="js/core/sync.js"></script>
 <script src="js/art/animal-images.js"></script>
 <script src="js/art/animals.js"></script>
 <script src="js/art/animals-science.js"></script>
