@@ -83,6 +83,16 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each unit's actual vocabulary term, used wherever she has to
+   *  type the term herself instead of picking it from a list. */
+  const WORD_ACCEPT = {
+    variation: [], 'continuous variation': ['continuous'], 'discontinuous variation': ['discontinuous'],
+    gene: [], DNA: ['dna'], chromosome: ['chromosomes'],
+    'inherited characteristic': ['inherited', 'an inherited characteristic'],
+    'acquired characteristic': ['acquired', 'an acquired characteristic'],
+    offspring: [], 'selective breeding': [], species: [],
+  };
 
   /* ---------- diagrams ---------- */
   /** parents → child on top; cell → nucleus → chromosome → DNA along the bottom */
@@ -189,7 +199,7 @@
     const t = R.pick(TRAITS);
     return {
       prompt: `Is <b>${t.name}</b> continuous or discontinuous variation?`,
-      answer: ch(t.type, ['continuous', 'discontinuous'], 2),
+      answer: textAns(t.type, [], 'one word'),
       hint: 'Do you MEASURE it (continuous) or do you fall into one of a few GROUPS (discontinuous)?',
       working: [
         '<b>Picture:</b> continuous is a ramp — every point in between exists. Discontinuous is a set of steps with gaps.',
@@ -237,7 +247,7 @@
     }
     return {
       prompt: `Which word means "<b>${w.mean}</b>"?`,
-      answer: ch(w.word, WORDS.map((x) => x.word)),
+      answer: textAns(w.word, WORD_ACCEPT[w.word], 'one or two words'),
       hint: `Think of ${w.ex}.`,
       working: [`<b>Example:</b> ${w.ex}.`, `That word is <b>${w.word}</b>.`],
       finalAnswer: w.word, skill: 'words',
@@ -259,7 +269,7 @@
     return {
       visual: sortSvg(item.card),
       prompt: `Which bin does <b>${item.full}</b> go in?`,
-      answer: ch(item.kind, ['inherited', 'acquired'], 2),
+      answer: textAns(item.kind, [], 'one word'),
       hint: 'Were you born with it (inherited), or did it happen during your life (acquired)?',
       working: ['<b>Picture:</b> two bins — "born with it" and "happened to me".', `1. Could a newborn baby have it? <b>${item.kind === 'inherited' ? 'Yes.' : 'No.'}</b>`, `So it goes in the <b>${item.kind}</b> bin — ${item.why}.`],
       finalAnswer: item.kind, skill: 'inherited-acquired',
@@ -280,19 +290,31 @@
       finalAnswer: yes ? 'Yes — it is carried in the genes' : 'No — it is not carried in the genes', skill: 'inherited-acquired',
     };
   }
+  const GENE_TEXT = [
+    { p: 'Where in a cell are the genes kept?', a: 'nucleus', accept: ['the nucleus', 'in the nucleus'], full: 'in the nucleus' },
+    { p: 'What are chromosomes made of?', a: 'DNA', accept: ['dna'], full: 'DNA' },
+  ];
+  const GENE_CHOICE = [
+    { p: 'What is a <b>gene</b>?', a: 'a short section of DNA carrying one instruction', w: ['a tiny animal inside the cell', 'the jelly that fills a cell', 'a kind of blood cell'] },
+    { p: 'How many chromosomes are in a normal human body cell?', a: '46 (23 pairs)', w: ['23 (no pairs)', '2', '100'] },
+    { p: 'Where did the DNA in your cells come from?', a: 'half from your mother and half from your father', w: ['all of it from your mother', 'all of it from your father', 'it was made new when you were born'] },
+    { p: 'Genes are instructions for what?', a: 'building and running your body', w: ['storing your memories', 'carrying oxygen', 'digesting food only'] },
+    { p: 'Which of these is the right order, biggest to smallest?', a: 'cell → nucleus → chromosome → gene', w: ['gene → chromosome → nucleus → cell', 'chromosome → cell → gene → nucleus', 'nucleus → cell → gene → chromosome'] },
+    { p: 'Why do family members look alike but not identical?', a: 'Each child gets a different mix of genes from the same two parents', w: ['Children copy the way their parents look', 'Each child gets all its genes from one parent', 'Looks are decided by what you eat'] },
+    { p: 'Which cells carry only <b>half</b> a set of genes?', a: 'sperm cells and egg cells', w: ['red blood cells', 'nerve cells', 'skin cells'] },
+  ];
   function geneQ() {
-    const forms = [
-      { p: 'Where in a cell are the genes kept?', a: 'in the nucleus', w: ['in the cytoplasm', 'in the cell membrane', 'in the mitochondria'] },
-      { p: 'What is a <b>gene</b>?', a: 'a short section of DNA carrying one instruction', w: ['a tiny animal inside the cell', 'the jelly that fills a cell', 'a kind of blood cell'] },
-      { p: 'What are chromosomes made of?', a: 'DNA', w: ['protein only', 'water and salt', 'fat'] },
-      { p: 'How many chromosomes are in a normal human body cell?', a: '46 (23 pairs)', w: ['23 (no pairs)', '2', '100'] },
-      { p: 'Where did the DNA in your cells come from?', a: 'half from your mother and half from your father', w: ['all of it from your mother', 'all of it from your father', 'it was made new when you were born'] },
-      { p: 'Genes are instructions for what?', a: 'building and running your body', w: ['storing your memories', 'carrying oxygen', 'digesting food only'] },
-      { p: 'Which of these is the right order, biggest to smallest?', a: 'cell → nucleus → chromosome → gene', w: ['gene → chromosome → nucleus → cell', 'chromosome → cell → gene → nucleus', 'nucleus → cell → gene → chromosome'] },
-      { p: 'Why do family members look alike but not identical?', a: 'Each child gets a different mix of genes from the same two parents', w: ['Children copy the way their parents look', 'Each child gets all its genes from one parent', 'Looks are decided by what you eat'] },
-      { p: 'Which cells carry only <b>half</b> a set of genes?', a: 'sperm cells and egg cells', w: ['red blood cells', 'nerve cells', 'skin cells'] },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(2 / 9)) {
+      const f = R.pick(GENE_TEXT);
+      return {
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one word'),
+        hint: 'DNA is coiled into chromosomes, which sit in the nucleus. A gene is one short piece of that DNA.',
+        working: ['<b>Picture:</b> the nucleus is a library, a chromosome is a book, and a gene is one sentence in it.', `Answer: <b>${f.full}</b>.`],
+        finalAnswer: f.full, skill: 'genes',
+      };
+    }
+    const f = R.pick(GENE_CHOICE);
     return {
       prompt: f.p,
       answer: ch(f.a, f.w, 4),
@@ -305,12 +327,20 @@
     const forms = [
       { p: 'How do <b>identical</b> twins form?', a: 'One fertilised egg splits into two', w: ['Two eggs are fertilised by two sperm', 'Two babies grow from the same sperm', 'One baby splits in half at birth'] },
       { p: 'How do <b>non-identical</b> twins form?', a: 'Two eggs are fertilised by two different sperm', w: ['One fertilised egg splits into two', 'One egg is fertilised twice by the same sperm', 'The mother has two nuclei'] },
-      { p: 'Two twins are a boy and a girl. What kind of twins must they be?', a: 'non-identical', w: ['identical', 'you cannot tell', 'both kinds at once'] },
       { p: 'Identical twins have exactly the same genes. How alike are <b>non-identical</b> twins?', a: 'About as alike as any brother and sister', w: ['Exactly the same as each other', 'Completely different, with no shared genes', 'Alike only if they are the same sex'] },
       { p: 'One identical twin trains hard and gets much stronger than the other. Why are they now different?', a: 'The difference is acquired — caused by the environment, not the genes', w: ['Their genes changed with the training', 'They were never really identical', 'Training changes your chromosomes'] },
       { p: 'Why are identical twins so useful to scientists?', a: 'Their genes are the same, so any difference must come from the environment', w: ['They are easier to find than other people', 'They always behave the same way', 'They have twice as many genes'] },
       { p: 'Do identical twins have exactly the same fingerprints?', a: 'No — fingerprints also depend on how the skin grew before birth', w: ['Yes, always exactly the same', 'Yes, but only until they are ten', 'No, because their genes are different'] },
     ];
+    if (R.chance(1 / 7)) {
+      return {
+        prompt: 'Two twins are a boy and a girl. What kind of twins must they be?',
+        answer: textAns('non-identical', ['non identical', 'fraternal', 'fraternal twins'], 'one word'),
+        hint: 'Identical = ONE egg that split (same genes, so always the same sex). Non-identical = TWO eggs.',
+        working: ['<b>Picture:</b> identical twins are one cake cut in half. Non-identical twins are two cakes baked from the same recipe book on the same day.', 'Identical twins share every gene, so they are always the same sex.', 'A boy and a girl cannot be identical.', 'Answer: <b>non-identical</b>.'],
+        finalAnswer: 'non-identical', skill: 'twins',
+      };
+    }
     const f = R.pick(forms);
     return {
       prompt: f.p,
@@ -405,7 +435,7 @@
       return {
         visual: varChartSvg(cont, vals),
         prompt: 'Does this chart show <b>continuous</b> or <b>discontinuous</b> variation?',
-        answer: ch(cont ? 'continuous' : 'discontinuous', ['continuous', 'discontinuous'], 2),
+        answer: textAns(cont ? 'continuous' : 'discontinuous', [], 'one word'),
         hint: 'Measured in a range with values in between = continuous. A few named groups = discontinuous.',
         working: [
           '<b>Picture:</b> a ramp (continuous) or steps with gaps (discontinuous).',

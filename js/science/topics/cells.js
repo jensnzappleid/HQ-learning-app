@@ -29,6 +29,26 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each cell-part name, used wherever she has to
+   *  type the name herself instead of picking it from a list. */
+  const PART_ACCEPT = {
+    'cell membrane': ['membrane', 'the cell membrane', 'the membrane'],
+    nucleus: ['the nucleus'],
+    cytoplasm: ['the cytoplasm'],
+    mitochondria: ['mitochondrion', 'the mitochondria'],
+    'cell wall': ['the cell wall', 'wall'],
+    chloroplast: ['chloroplasts', 'the chloroplast'],
+    vacuole: ['the vacuole'],
+  };
+  const CELL_ACCEPT = {
+    'red blood cell': ['a red blood cell', 'red blood cells'],
+    'nerve cell': ['a nerve cell', 'nerve cells', 'neurone', 'neuron'],
+    'root hair cell': ['a root hair cell', 'root hair cells'],
+    'sperm cell': ['a sperm cell', 'sperm cells', 'sperm'],
+    'leaf cell': ['a leaf cell', 'leaf cells'],
+    'muscle cell': ['a muscle cell', 'muscle cells'],
+  };
 
   /* ---------- diagrams ---------- */
   const cellSvg = (kind, highlight) => {
@@ -79,11 +99,10 @@
     const kind = R.chance(0.5) ? 'plant' : 'animal';
     const pool = PARTS.filter((p) => (kind === 'plant' ? true : p.where === 'both'));
     const p = R.pick(level === 1 ? pool.filter((q) => ['nucleus', 'cell membrane', 'cell wall'].includes(q.name)).concat(pool[0]) : pool);
-    const c = choice(p.name, PARTS.filter((q) => q.name !== p.name).map((q) => q.name));
     return {
       visual: labelSvg(kind, p.name),
       prompt: `Look at the ${kind} cell. What is the circled part called?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.name, PART_ACCEPT[p.name], 'one or two words'),
       hint: `It ${p.job}.`,
       working: [`The circled part ${p.job}.`, `That part is the <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'parts',
@@ -92,10 +111,11 @@
   function plantOrAnimal(level) {
     const p = R.pick(PARTS);
     const isPlantOnly = p.where === 'plant';
-    const c = choice(isPlantOnly ? 'Only plant cells' : 'Both plant and animal cells', ['Only animal cells', isPlantOnly ? 'Both plant and animal cells' : 'Only plant cells'], 3);
     return {
       prompt: `Which cells have a <b>${p.name}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: isPlantOnly
+        ? textAns('plant cells only', ['only plant cells', 'plants only', 'just plant cells', 'plant'], 'a few words')
+        : textAns('both', ['both plant and animal cells', 'both plant and animal', 'plant and animal cells', 'plant and animal', 'all cells'], 'a few words'),
       hint: 'Plant cells have three extra parts that animal cells do not: cell wall, chloroplasts and a big vacuole.',
       working: [
         '<b>Picture:</b> a plant cell is an animal cell in a cardboard box, with green solar panels and a water balloon inside.',
@@ -105,12 +125,15 @@
       finalAnswer: isPlantOnly ? 'Only plant cells' : 'Both plant and animal cells', skill: 'plant-animal',
     };
   }
+  const ORGANISATION_ACCEPT = {
+    cell: ['a cell'], tissue: ['a tissue', 'tissues'], organ: ['an organ', 'organs'],
+    'organ system': ['an organ system', 'organ systems'], organism: ['an organism', 'organisms'],
+  };
   function organisation(level) {
     const i = R.int(0, ORGANISATION.length - 2);
-    const c = choice(ORGANISATION[i + 1], ORGANISATION.filter((x) => x !== ORGANISATION[i + 1]));
     return {
       prompt: `Cells are organised from smallest to biggest. What comes straight after ${/^[aeiou]/.test(ORGANISATION[i]) ? 'an' : 'a'} <b>${ORGANISATION[i]}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(ORGANISATION[i + 1], ORGANISATION_ACCEPT[ORGANISATION[i + 1]], 'one word'),
       hint: 'cell → tissue → organ → organ system → organism',
       working: ['<b>Picture:</b> bricks → a wall → a room → a house → a whole street.', `The order is: ${ORGANISATION.join(' → ')}.`, `After ${/^[aeiou]/.test(ORGANISATION[i]) ? 'an' : 'a'} ${ORGANISATION[i]} comes ${/^[aeiou]/.test(ORGANISATION[i + 1]) ? 'an' : 'a'} <b>${ORGANISATION[i + 1]}</b>.`],
       finalAnswer: ORGANISATION[i + 1], skill: 'organisation',
@@ -128,10 +151,9 @@
         finalAnswer: s.why, skill: 'specialised',
       };
     }
-    const c = choice(s.cell, SPECIALISED.filter((x) => x.cell !== s.cell).map((x) => x.cell));
     return {
       prompt: `Which cell has <b>${s.feature}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(s.cell, CELL_ACCEPT[s.cell], 'a few words'),
       hint: 'Think about which cell needs that feature to do its job.',
       working: [`${s.feature.charAt(0).toUpperCase() + s.feature.slice(1)} is useful ${s.why}.`, `That is the <b>${s.cell}</b>.`],
       finalAnswer: s.cell, skill: 'specialised',

@@ -55,6 +55,11 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each unit's actual vocabulary term, used wherever she has to
+   *  type the term herself instead of picking it from a list. */
+  const ROCK_NAME_ACCEPT = { 'pounamu (greenstone)': ['pounamu', 'greenstone'] };
+  const SOIL_LAYER_ACCEPT = { 'leaf litter': ['leaves'], topsoil: ['top soil'], subsoil: ['sub soil'], 'weathered rock': ['weathered rock bits'], bedrock: ['bed rock'] };
 
   /* ---------- diagrams ---------- */
   function rockCycleSvg(highlight) {
@@ -148,10 +153,9 @@
   /* ---------- question makers ---------- */
   function rockTypeQ(level) {
     const r = R.pick(ROCKS);
-    const c = choice(r.t, TYPES, 3);
     return {
       prompt: `What type of rock is <b>${r.n}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(r.t, [], 'one word'),
       hint: `Clue: it forms from ${r.how}.`,
       working: ['<b>Picture:</b> melted chocolate that set (igneous) · a squashed layer sandwich (sedimentary) · a toasted sandwich (metamorphic).', `1. How does ${r.n} form? From ${r.how}.`, `That makes it <b>${r.t}</b>.`],
       finalAnswer: r.t, skill: 'rock-types',
@@ -170,10 +174,9 @@
         finalAnswer: r.how, skill: 'formation',
       };
     }
-    const c = choice(r.n, ROCKS.map((x) => x.n));
     return {
       prompt: `Which rock forms from <b>${r.how}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(r.n, ROCK_NAME_ACCEPT[r.n], 'one word'),
       hint: `It is a ${r.t} rock — ${r.clue}.`,
       working: [`<b>Picture:</b> ${TYPE_INFO[r.t].pic}.`, `That description is <b>${r.n}</b>, a ${r.t} rock.`],
       finalAnswer: r.n, skill: 'formation',
@@ -192,10 +195,9 @@
         finalAnswer: TYPE_INFO[t].def, skill: 'rock-types',
       };
     }
-    const c = choice(t, TYPES, 3);
     return {
       prompt: `Which type of rock is made from <b>${TYPE_INFO[t].def}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(t, [], 'one word'),
       hint: `Remember: ${TYPE_INFO[t].pic}.`,
       working: [`<b>Picture:</b> ${TYPE_INFO[t].pic}.`, `That is <b>${t}</b>.`],
       finalAnswer: t, skill: 'rock-types',
@@ -204,11 +206,10 @@
 
   function textureQ(level) {
     const t = R.pick(TYPES);
-    const c = choice(t, TYPES, 3);
     return {
       visual: textureSvg(t),
       prompt: 'Look at the rock sample. Which type of rock is it?',
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(t, [], 'one word'),
       hint: 'Layers → sedimentary. Locked-together crystals → igneous. Wavy squashed bands → metamorphic.',
       working: ['<b>Picture:</b> layer sandwich · melted-and-set chocolate · toasted sandwich.', `1. What can you see? ${TYPE_INFO[t].crystal}.`, `So it is <b>${t}</b>.`],
       finalAnswer: t, skill: 'rock-types',
@@ -217,10 +218,9 @@
 
   function nzExampleQ(level) {
     const r = R.pick(ROCKS);
-    const c = choice(r.n, ROCKS.map((x) => x.n));
     return {
       prompt: `Which New Zealand rock would you find at <b>${r.nz}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(r.n, ROCK_NAME_ACCEPT[r.n], 'one word'),
       hint: `It is a ${r.t} rock — ${r.clue}.`,
       working: [`<b>Picture:</b> a map of Aotearoa with the rocks marked on.`, `${r.nz.charAt(0).toUpperCase() + r.nz.slice(1)} → <b>${r.n}</b> (${r.t}).`],
       finalAnswer: r.n, skill: 'nz-rocks',
@@ -249,10 +249,9 @@
 
   function weatherErodeQ(level) {
     const p = R.pick(level === 1 ? PROCESSES.filter((x) => x.kind !== 'deposition') : PROCESSES);
-    const c = choice(p.kind, ['weathering', 'erosion', 'deposition'], 3);
     return {
       prompt: `Is this <b>weathering</b>, <b>erosion</b> or <b>deposition</b>?<br>${p.p.charAt(0).toUpperCase() + p.p.slice(1)}.`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.kind, [], 'one word'),
       hint: 'Weathering = broken up ON THE SPOT. Erosion = carried AWAY. Deposition = dropped somewhere new.',
       working: ['<b>Picture:</b> breaking a biscuit (weathering), carrying the crumbs off (erosion), tipping them on the floor (deposition).', `1. Ask: does the rock stay put or move? ${p.why.charAt(0).toUpperCase() + p.why.slice(1)}.`, `So it is <b>${p.kind}</b>.`],
       finalAnswer: p.kind, skill: 'weathering',
@@ -260,21 +259,32 @@
     };
   }
 
+  const WEATHER_TEXT = [
+    { q: 'Water gets into a crack, freezes overnight, swells, and cracks the rock apart. What is this called?', a: 'freeze-thaw weathering', accept: ['freeze thaw weathering', 'freezethaw weathering', 'freeze-thaw', 'freeze thaw'], full: 'Freeze–thaw weathering',
+      w: ['<b>Picture:</b> a full drink bottle left in the freezer — the ice pushes the sides out.', '1. Water expands by about a tenth when it freezes.', '2. That push widens the crack a tiny bit every night.', 'That is <b>freeze–thaw weathering</b>.'], svg: true },
+    { q: 'Slightly acidic rain slowly dissolves the limestone at Punakaiki. What kind of weathering is this?', a: 'chemical weathering', accept: ['chemical'], full: 'Chemical weathering',
+      w: ['<b>Picture:</b> a fizzy drink slowly eating away at a tooth.', '1. Is the rock being smashed or dissolved? Dissolved.', 'Rock dissolved by a chemical = <b>chemical weathering</b>.'] },
+    { q: 'A tree root grows into a crack and slowly forces it wider. What kind of weathering is this?', a: 'biological weathering', accept: ['biological'], full: 'Biological weathering (a living thing does it)',
+      w: ['<b>Picture:</b> a root working like a very slow crowbar.', '1. What is doing the breaking? A living thing.', 'So it is <b>biological weathering</b>.'] },
+  ];
+  const WEATHER_CHOICE = [
+    { q: 'What is the difference between weathering and erosion?', a: 'Weathering breaks rock up where it is; erosion carries the pieces away', wrongs: ['They are two words for the same thing', 'Weathering only happens in the rain', 'Erosion happens first, then weathering'],
+      w: ['<b>Picture:</b> breaking a biscuit on the bench (weathering), then sweeping the crumbs into the bin (erosion).', 'Weathering = <b>break up in place</b>. Erosion = <b>carry away</b>.'] },
+  ];
   function weatheringTypeQ(level) {
-    const items = [
-      { q: 'Water gets into a crack, freezes overnight, swells, and cracks the rock apart. What is this called?', a: 'Freeze–thaw weathering', wrongs: ['Erosion by a river', 'Chemical weathering', 'Deposition'],
-        w: ['<b>Picture:</b> a full drink bottle left in the freezer — the ice pushes the sides out.', '1. Water expands by about a tenth when it freezes.', '2. That push widens the crack a tiny bit every night.', 'That is <b>freeze–thaw weathering</b>.'] },
-      { q: 'Slightly acidic rain slowly dissolves the limestone at Punakaiki. What kind of weathering is this?', a: 'Chemical weathering', wrongs: ['Freeze–thaw weathering', 'Erosion', 'Deposition'],
-        w: ['<b>Picture:</b> a fizzy drink slowly eating away at a tooth.', '1. Is the rock being smashed or dissolved? Dissolved.', 'Rock dissolved by a chemical = <b>chemical weathering</b>.'] },
-      { q: 'A tree root grows into a crack and slowly forces it wider. What kind of weathering is this?', a: 'Biological weathering (a living thing does it)', wrongs: ['Chemical weathering', 'Erosion', 'Deposition'],
-        w: ['<b>Picture:</b> a root working like a very slow crowbar.', '1. What is doing the breaking? A living thing.', 'So it is <b>biological weathering</b>.'] },
-      { q: 'What is the difference between weathering and erosion?', a: 'Weathering breaks rock up where it is; erosion carries the pieces away', wrongs: ['They are two words for the same thing', 'Weathering only happens in the rain', 'Erosion happens first, then weathering'],
-        w: ['<b>Picture:</b> breaking a biscuit on the bench (weathering), then sweeping the crumbs into the bin (erosion).', 'Weathering = <b>break up in place</b>. Erosion = <b>carry away</b>.'] },
-    ];
-    const it = R.pick(items);
+    if (R.chance(0.75)) {
+      const it = R.pick(WEATHER_TEXT);
+      return {
+        visual: it.svg ? freezeThawSvg() : undefined,
+        prompt: it.q,
+        answer: textAns(it.a, it.accept, 'two or three words'),
+        hint: 'Break it up = weathering. Move it = erosion.',
+        working: it.w, finalAnswer: it.full, skill: 'weathering',
+      };
+    }
+    const it = R.pick(WEATHER_CHOICE);
     const c = choice(it.a, it.wrongs, 4);
     return {
-      visual: /freezes overnight/.test(it.q) ? freezeThawSvg() : undefined,
       prompt: it.q,
       answer: { type: 'choice', value: c.value, choices: c.choices },
       hint: 'Break it up = weathering. Move it = erosion.',
@@ -308,11 +318,10 @@
     }
     if (style === 'layer') {
       const i = R.int(0, LAYERS.length - 2);
-      const c = choice(LAYERS[i + 1], LAYERS);
       return {
         visual: soilSvg(),
         prompt: `Digging straight down, which layer comes <b>just below</b> the ${LAYERS[i]}?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(LAYERS[i + 1], SOIL_LAYER_ACCEPT[LAYERS[i + 1]], 'one or two words'),
         hint: LAYERS.join(' → '),
         working: ['<b>Picture:</b> a slice down through the ground, like a layer cake.', `Order down: ${LAYERS.join(' → ')}.`, `Below the ${LAYERS[i]} is the <b>${LAYERS[i + 1]}</b>.`],
         finalAnswer: LAYERS[i + 1], skill: 'soil',

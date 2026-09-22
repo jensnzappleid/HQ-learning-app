@@ -81,6 +81,7 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   const ball = (x, y, fill, stroke, r) => `<circle cx="${x}" cy="${y}" r="${r || 8}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
@@ -147,11 +148,10 @@
   /* ---------- question makers ---------- */
   function symbolToName(level) {
     const e = R.pick(level === 1 ? ELEMENTS.filter((x) => x.z <= 12) : ELEMENTS);
-    const opt = choice(e.name, ELEMENTS.filter((x) => x.sym !== e.sym).map((x) => x.name));
     return {
       visual: periodicSvg(e.sym),
       prompt: `Which element has the symbol <b>${e.sym}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(e.name, [], 'one word'),
       hint: 'Find the symbol highlighted in pink on the table.',
       working: [`<b>Picture:</b> a symbol is the element's short name badge.`, `1. Find <b>${e.sym}</b> on the table (element number ${e.z}).`, `2. That is <b>${e.name}</b>.`],
       finalAnswer: e.name, skill: 'symbols',
@@ -159,10 +159,9 @@
   }
   function nameToSymbol(level) {
     const e = R.pick(level === 1 ? ELEMENTS.filter((x) => x.z <= 12) : ELEMENTS);
-    const opt = choice(e.sym, ELEMENTS.filter((x) => x.name !== e.name).map((x) => x.sym));
     return {
       prompt: `What is the chemical symbol for <b>${e.name}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(e.sym, [], 'one or two letters'),
       hint: 'A symbol is one capital letter, or a capital followed by a small letter.',
       working: [`<b>Picture:</b> the badge on the periodic table square.`, `1. ${e.name.charAt(0).toUpperCase() + e.name.slice(1)} is element number ${e.z}.`, `2. Its symbol is <b>${e.sym}</b>.`],
       finalAnswer: e.sym, skill: 'symbols',
@@ -171,11 +170,10 @@
   function metalOrNot(level) {
     const e = R.pick(ELEMENTS);
     const correct = e.metal ? 'a metal' : 'a non-metal';
-    const opt = choice(correct, [e.metal ? 'a non-metal' : 'a metal'], 2);
     return {
       visual: periodicSvg(e.sym),
       prompt: `Look at the periodic table. Is <b>${e.name} (${e.sym})</b> a metal or a non-metal?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(e.metal ? 'metal' : 'non-metal', e.metal ? ['a metal'] : ['a non-metal', 'nonmetal', 'non metal']),
       hint: 'Metals are on the LEFT of the table (yellow), non-metals on the RIGHT (blue).',
       working: ['<b>Picture:</b> the table is split down the middle — metals on the left, non-metals on the right.', `1. Find ${e.sym} on the table.`, `2. It is in the ${e.metal ? 'yellow (metal)' : 'blue (non-metal)'} part.`, `So ${e.name} is <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'periodic-table',
@@ -208,12 +206,12 @@
       finalAnswer: correct, skill: 'periodic-table',
     };
   }
+  const ECM_TYPE_ACCEPT = { 'an element': ['element'], 'a compound': ['compound'], 'a mixture': ['mixture'] };
   function classifyEcm(level) {
     const s = R.pick(SUBSTANCES);
-    const opt = choice(s.type, ['an element', 'a compound', 'a mixture'].filter((x) => x !== s.type), 3);
     return {
       prompt: `Is <b>${s.name}</b> an element, a compound or a mixture?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(s.type, ECM_TYPE_ACCEPT[s.type], 'one word'),
       hint: 'One kind of atom = element. Different atoms JOINED = compound. Different substances NOT joined = mixture.',
       working: [
         '<b>Picture:</b> one colour of ball (element) · balls joined with a stick (compound) · loose balls of different colours (mixture).',
@@ -223,6 +221,10 @@
       finalAnswer: s.type, skill: 'classify',
     };
   }
+  const DEF_WORD_ACCEPT = {
+    'an atom': ['atom'], 'an element': ['element'], 'a compound': ['compound'],
+    'a mixture': ['mixture'], 'a group': ['group'], 'a period': ['period'],
+  };
   function defineQ(level) {
     const d = R.pick(DEFS);
     if (R.chance(0.5)) {
@@ -235,10 +237,9 @@
         finalAnswer: d.def, skill: 'vocab',
       };
     }
-    const opt = choice(d.word, DEFS.filter((x) => x.def !== d.def).map((x) => x.word));
     return {
       prompt: `What is the word for <b>${d.def}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(d.word, DEF_WORD_ACCEPT[d.word], 'one word'),
       hint: 'Element, compound, mixture, atom, group or period?',
       working: ['<b>Picture:</b> the three boxes of balls.', `That is <b>${d.word}</b>.`],
       finalAnswer: d.word, skill: 'vocab',

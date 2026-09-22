@@ -55,6 +55,13 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for the three ways heat travels. */
+  const WAY_ACCEPT = {
+    conduction: ['conducted', 'by conduction'],
+    convection: ['a convection current', 'by convection'],
+    radiation: ['radiated', 'by radiation'],
+  };
   const r1 = (v) => Math.round(v * 10) / 10;
   const arrow = (x1, y1, x2, y2, col, w) => {
     const dx = x2 - x1, dy = y2 - y1, L = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -142,10 +149,9 @@
   /* ---------- question makers ---------- */
   function wayFromExample() {
     const e = R.pick(EXAMPLES);
-    const c = choice(e.t, WAY_NAMES, 3);
     return {
       prompt: `How is the heat travelling here: <b>${e.s}</b>?`,
-      answer: ans(c),
+      answer: textAns(e.t, WAY_ACCEPT[e.t], 'one word'),
       hint: 'Solid touching solid = conduction. Moving liquid or gas = convection. Across a gap with nothing touching = radiation.',
       working: [
         '<b>Picture:</b> ask the three questions — is it through a solid? is something flowing? is it across a gap?',
@@ -157,25 +163,36 @@
   }
   function wayFromDesc() {
     const w = R.pick(WAYS);
-    const c = choice(w.name, WAY_NAMES, 3);
     return {
       prompt: `Which way of moving heat is <b>${w.desc}</b>?`,
-      answer: ans(c),
+      answer: textAns(w.name, WAY_ACCEPT[w.name], 'one word'),
       hint: `Think of ${w.pic}.`,
       working: [`<b>Picture:</b> ${w.pic}.`, `That is <b>${w.name}</b>.`],
       finalAnswer: w.name, skill: 'transfer',
     };
   }
+  const WAYFACT_TEXT = [
+    { p: 'Which way of moving heat works in <b>solids</b>?', a: 'conduction' },
+    { p: 'Which way of moving heat only works in <b>liquids and gases</b>?', a: 'convection' },
+    { p: 'Which way of moving heat can cross <b>empty space</b>, with no particles at all?', a: 'radiation' },
+    { p: 'How does heat from the Sun reach Earth?', a: 'radiation' },
+  ];
+  const WAYFACT_CHOICE = [
+    { p: 'In a convection current, what does the warm liquid or gas do?', a: 'It rises, because it is less dense', w: ['It sinks, because it is heavier', 'It stays exactly where it is', 'It turns into a solid'] },
+    { p: 'In a convection current, what does the cool liquid or gas do?', a: 'It sinks, and takes the place of the warm stuff', w: ['It rises to the top', 'It stops moving', 'It heats up straight away'] },
+  ];
   function wayFact() {
-    const q = R.pick([
-      { p: 'Which way of moving heat works in <b>solids</b>?', a: 'conduction', w: ['convection', 'radiation'] },
-      { p: 'Which way of moving heat only works in <b>liquids and gases</b>?', a: 'convection', w: ['conduction', 'radiation'] },
-      { p: 'Which way of moving heat can cross <b>empty space</b>, with no particles at all?', a: 'radiation', w: ['conduction', 'convection'] },
-      { p: 'How does heat from the Sun reach Earth?', a: 'radiation', w: ['conduction', 'convection'] },
-      { p: 'In a convection current, what does the warm liquid or gas do?', a: 'It rises, because it is less dense', w: ['It sinks, because it is heavier', 'It stays exactly where it is', 'It turns into a solid'] },
-      { p: 'In a convection current, what does the cool liquid or gas do?', a: 'It sinks, and takes the place of the warm stuff', w: ['It rises to the top', 'It stops moving', 'It heats up straight away'] },
-    ]);
-    const c = choice(q.a, q.w, q.w.length + 1 > 3 ? 4 : 3);
+    if (R.chance(0.5)) {
+      const q = R.pick(WAYFACT_TEXT);
+      return {
+        prompt: q.p, answer: textAns(q.a, WAY_ACCEPT[q.a], 'one word'),
+        hint: 'Conduction needs touching. Convection needs something that can flow. Radiation needs nothing at all.',
+        working: ['<b>Picture:</b> spoon in soup (conduction) · air rising off a heater (convection) · sun on your face (radiation).', `Answer: <b>${q.a}</b>.`],
+        finalAnswer: q.a, skill: 'transfer',
+      };
+    }
+    const q = R.pick(WAYFACT_CHOICE);
+    const c = choice(q.a, q.w, 3);
     return {
       prompt: q.p, answer: ans(c),
       hint: 'Conduction needs touching. Convection needs something that can flow. Radiation needs nothing at all.',
@@ -185,18 +202,16 @@
   }
   function conductorInsulator() {
     const m = R.pick(MATERIALS);
-    const correct = m.c ? 'A good conductor' : 'An insulator (a poor conductor)';
-    const c = choice(correct, ['A good conductor', 'An insulator (a poor conductor)'], 2);
     return {
       prompt: `Is <b>${m.m}</b> a good conductor of heat, or an insulator?`,
-      answer: ans(c),
+      answer: textAns(m.c ? 'conductor' : 'insulator', m.c ? ['a conductor', 'a good conductor', 'good conductor'] : ['an insulator', 'a poor conductor', 'poor conductor'], 'one word'),
       hint: 'Metals are the good conductors. Almost everything else — and especially anything that traps air — is an insulator.',
       working: [
         '<b>Picture:</b> a metal spoon in soup gets hot fast; a wooden spoon does not.',
         `1. Is ${m.m} a metal? ${m.c ? 'Yes.' : 'No.'}`,
-        `So it is <b>${correct.toLowerCase()}</b>.`,
+        `So it is <b>${m.c ? 'a good conductor' : 'an insulator (a poor conductor)'}</b>.`,
       ],
-      finalAnswer: correct, skill: 'conductors',
+      finalAnswer: m.c ? 'A good conductor' : 'An insulator (a poor conductor)', skill: 'conductors',
     };
   }
   function metalFeelsColder() {
@@ -219,17 +234,29 @@
       finalAnswer: q.a, skill: 'conductors',
     };
   }
+  const TVH_TEXT = [
+    { p: 'What unit is temperature measured in?', a: 'celsius', accept: ['degrees celsius', '°c', 'c', 'degrees c'], full: 'degrees Celsius (°C)' },
+    { p: 'What unit is heat <b>energy</b> measured in?', a: 'joules', accept: ['joule', 'j'], full: 'joules (J)' },
+    { p: 'What instrument measures temperature?', a: 'thermometer', accept: ['a thermometer'], full: 'a thermometer' },
+  ];
+  const TVH_CHOICE = [
+    { p: 'What does <b>temperature</b> measure?', a: 'How hot something is — how fast its particles are moving', w: ['How much energy it holds altogether', 'How much stuff it is made of', 'How much space it takes up'] },
+    { p: 'What is <b>heat</b>?', a: 'Energy that moves from a hotter place to a cooler place', w: ['The same thing as temperature', 'A kind of material inside hot things', 'How fast something moves'] },
+    { p: 'Which way does heat always flow?', a: 'From hotter to cooler', w: ['From cooler to hotter', 'Both ways equally', 'Downwards, always'] },
+    { p: 'A whole bath at 40 °C and a cup of tea at 90 °C. Which holds <b>more heat energy</b> altogether?', a: 'The bath — it has far more particles', w: ['The tea — it is at a higher temperature', 'They hold the same', 'Neither holds heat energy'] },
+    { p: 'A hot drink cools down on the bench. Where does the energy go?', a: 'Into the mug, the air and the bench around it', w: ['It is destroyed', 'It goes back into the kettle', 'It turns into cold'] },
+  ];
   function tempVsHeat() {
-    const q = R.pick([
-      { p: 'What does <b>temperature</b> measure?', a: 'How hot something is — how fast its particles are moving', w: ['How much energy it holds altogether', 'How much stuff it is made of', 'How much space it takes up'] },
-      { p: 'What is <b>heat</b>?', a: 'Energy that moves from a hotter place to a cooler place', w: ['The same thing as temperature', 'A kind of material inside hot things', 'How fast something moves'] },
-      { p: 'Which way does heat always flow?', a: 'From hotter to cooler', w: ['From cooler to hotter', 'Both ways equally', 'Downwards, always'] },
-      { p: 'What unit is temperature measured in?', a: 'degrees Celsius (°C)', w: ['joules (J)', 'newtons (N)', 'kilograms (kg)'] },
-      { p: 'What unit is heat <b>energy</b> measured in?', a: 'joules (J)', w: ['degrees Celsius (°C)', 'newtons (N)', 'metres (m)'] },
-      { p: 'What instrument measures temperature?', a: 'a thermometer', w: ['a newton meter', 'a stopwatch', 'a measuring cylinder'] },
-      { p: 'A whole bath at 40 °C and a cup of tea at 90 °C. Which holds <b>more heat energy</b> altogether?', a: 'The bath — it has far more particles', w: ['The tea — it is at a higher temperature', 'They hold the same', 'Neither holds heat energy'] },
-      { p: 'A hot drink cools down on the bench. Where does the energy go?', a: 'Into the mug, the air and the bench around it', w: ['It is destroyed', 'It goes back into the kettle', 'It turns into cold'] },
-    ]);
+    if (R.chance(0.4)) {
+      const q = R.pick(TVH_TEXT);
+      return {
+        prompt: q.p, answer: textAns(q.a, q.accept, 'one word'),
+        hint: 'Temperature = how hot (°C). Heat = the energy that moves (J). Heat always flows hot → cold.',
+        working: ['<b>Picture:</b> temperature is how hot one particle is jiggling; heat is the total energy that flows away.', `Answer: <b>${q.full}</b>.`],
+        finalAnswer: q.full, skill: 'temp-heat',
+      };
+    }
+    const q = R.pick(TVH_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       prompt: q.p, answer: ans(c),
@@ -296,12 +323,12 @@
       { p: 'Look at the pot. What does arrow <b>A</b> in the middle show?', a: 'Hot water rising, because it is less dense', w: ['Cold water sinking', 'Heat radiating out of the pot', 'Steam turning back into water'] },
       { p: 'Look at the pot. What does arrow <b>B</b> at the side show?', a: 'Cooler water sinking to take the hot water\'s place', w: ['Hot water rising', 'Heat being conducted through the metal', 'Bubbles of air rising'] },
       { p: 'The flame is only under the middle of the pot. Why does the water at the top get hot too?', a: 'A convection current carries the hot water up and round', w: ['Radiation from the flame passes through the water', 'The water conducts heat as well as a metal does', 'Hot water sinks and pushes the cold up'] },
-      { p: 'What is the loop of moving water in this pot called?', a: 'a convection current', w: ['a conduction current', 'a radiation loop', 'an insulation cycle'] },
+      { p: 'What is the loop of moving water in this pot called?', a: 'a convection current', w: ['a conduction current', 'a radiation loop', 'an insulation cycle'], short: 'convection current', shortAccept: ['a convection current', 'convection'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: potSvg(),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p,
+      answer: q.short ? textAns(q.short, q.shortAccept, 'two words') : ans(choice(q.a, q.w, 4)),
       hint: 'Warm stuff rises because it spreads out and becomes less dense; cool stuff sinks into the space it left.',
       working: [
         '<b>Picture:</b> the water goes round in a loop — up the middle, across the top, down the sides.',
@@ -317,12 +344,12 @@
       { p: 'Look at the room. Why is a heater usually put down low, near the floor?', a: 'The warm air rises and spreads round the whole room', w: ['Warm air sinks, so it must start high', 'It is only for safety', 'Radiation only travels upwards'] },
       { p: 'Look at the room. Why is it warmer near the ceiling than near the floor?', a: 'Warm air is less dense, so it rises and collects at the top', w: ['Heat is made in the ceiling', 'Cool air rises to the ceiling', 'The ceiling conducts heat downwards'] },
       { p: 'In this room, what is the cooler air at floor level doing?', a: 'Sinking and moving back towards the heater', w: ['Rising to the ceiling', 'Staying completely still', 'Radiating out of the window'] },
-      { p: 'What is the name for the loop of moving air in this room?', a: 'a convection current', w: ['a conduction current', 'a radiation current', 'an insulation loop'] },
+      { p: 'What is the name for the loop of moving air in this room?', a: 'a convection current', w: ['a conduction current', 'a radiation current', 'an insulation loop'], short: 'convection current', shortAccept: ['a convection current', 'convection'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: roomSvg(),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p,
+      answer: q.short ? textAns(q.short, q.shortAccept, 'two words') : ans(choice(q.a, q.w, 4)),
       hint: 'Hot air rises; cool air sinks. That loop is a convection current.',
       working: ['<b>Picture:</b> a hot air balloon rising — warm air always goes up.', '1. Air over the heater warms, expands, becomes less dense and rises.', '2. Cool air slides along the floor to take its place, and round it goes.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'convection',

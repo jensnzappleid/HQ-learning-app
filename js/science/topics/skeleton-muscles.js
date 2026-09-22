@@ -41,6 +41,27 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each unit's actual vocabulary term, used wherever she has to
+   *  type the term herself instead of picking it from a list. */
+  const BONE_ACCEPT = {
+    skull: [], ribs: ['rib cage', 'ribcage', 'the ribs'], spine: ['backbone', 'spinal column', 'the spine'],
+    humerus: ['the humerus'], 'radius and ulna': ['radius & ulna', 'the radius and ulna', 'radius, ulna'],
+    pelvis: ['hip bone', 'hips', 'the pelvis'], femur: ['thigh bone', 'the femur'], tibia: ['shin bone', 'the tibia'],
+  };
+  const JOB_ACCEPT = {
+    support: ['supports', 'holding you up', 'holds you up'],
+    protection: ['protects', 'protecting'],
+    movement: ['moving', 'helps you move', 'moves you'],
+    'making blood': ['makes blood', 'blood making', 'making new blood', 'blood cells'],
+  };
+  const JOINT_ACCEPT = {
+    hinge: ['a hinge', 'hinge joint'],
+    'ball and socket': ['ball & socket', 'ball-and-socket', 'ball and socket joint'],
+    fixed: ['immovable', 'fused', 'a fixed joint'],
+    pivot: ['a pivot', 'pivot joint'],
+  };
+  const CONNECT_ACCEPT = { tendon: ['a tendon'], ligament: ['a ligament'], cartilage: ['a cartilage', 'the cartilage'] };
 
   /* ---------- diagrams ---------- */
   const BONE = '#EFE4CE', INK = '#4A4033', HI = '#E0568C', HIINK = '#9E2B57';
@@ -148,7 +169,7 @@
     return {
       visual: skeletonSvg(b.key, false),
       prompt: askWhere ? 'Look at the skeleton. Where in the body is the <b>pink</b> bone?' : 'Look at the skeleton. What is the <b>pink</b> bone called?',
-      answer: askWhere ? ch(b.where, BONES.map((x) => x.where)) : ch(b.name, BONES.map((x) => x.name)),
+      answer: askWhere ? ch(b.where, BONES.map((x) => x.where)) : textAns(b.name, BONE_ACCEPT[b.name], 'bone name'),
       hint: askWhere ? 'Name the bone first, then say where it sits.' : 'Start at the head and work down: skull, ribs, spine, humerus, radius and ulna, pelvis, femur, tibia.',
       working: ['<b>Picture:</b> work down the skeleton from head to toe.', `The pink bone is the <b>${b.name}</b>, in <b>${b.where}</b>.`],
       finalAnswer: askWhere ? b.where : b.name, skill: 'bones',
@@ -159,7 +180,7 @@
     if (R.chance(0.5)) {
       return {
         prompt: `Which bone is in <b>${b.where}</b>?`,
-        answer: ch(b.name, BONES.map((x) => x.name)),
+        answer: textAns(b.name, BONE_ACCEPT[b.name], 'bone name'),
         hint: 'Say the list from the top down: skull, ribs, spine, humerus, radius and ulna, pelvis, femur, tibia.',
         working: [`<b>Picture:</b> point to ${b.where} on yourself.`, `The bone there is the <b>${b.name}</b>.`],
         finalAnswer: b.name, skill: 'bones',
@@ -186,7 +207,7 @@
     }
     return {
       prompt: `Which bones protect <b>${p.protects}</b>?`,
-      answer: ch(p.name, BONES.map((b) => b.name)),
+      answer: textAns(p.name, BONE_ACCEPT[p.name], 'bone name'),
       hint: 'Which bone is wrapped around it?',
       working: [`<b>Picture:</b> a crash helmet around the soft part.`, `${cap(p.protects)} is protected by the <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'jobs',
@@ -205,7 +226,7 @@
     }
     return {
       prompt: `Which job of the skeleton is being described: it <b>${j.detail}</b>?`,
-      answer: ch(j.job, JOBS.map((x) => x.job)),
+      answer: textAns(j.job, JOB_ACCEPT[j.job], 'one or two words'),
       hint: 'The four jobs are support, protection, movement and making blood.',
       working: ['<b>Picture:</b> tent poles (support), helmet (protection), door handle (movement), hidden factory (making blood).', `That description is <b>${j.job}</b>.`],
       finalAnswer: j.job, skill: 'jobs',
@@ -216,7 +237,7 @@
     const e = R.pick(j.ex);
     return {
       prompt: `What type of joint is <b>${e}</b>?`,
-      answer: ch(j.type, JOINTS.map((x) => x.type)),
+      answer: textAns(j.type, JOINT_ACCEPT[j.type], 'joint type'),
       hint: 'Try moving it. Does it only fold one way, go every way, twist, or not move at all?',
       working: [`<b>Picture:</b> ${j.pic}.`, `Your ${e} <b>${j.move}</b>.`, `So it is a <b>${j.type}</b> joint.`],
       finalAnswer: j.type, skill: 'joints',
@@ -227,7 +248,7 @@
     if (R.chance(0.5)) {
       return {
         prompt: `Which joint <b>${j.move}</b>?`,
-        answer: ch(j.type, JOINTS.map((x) => x.type)),
+        answer: textAns(j.type, JOINT_ACCEPT[j.type], 'joint type'),
         hint: `It is like ${j.pic}.`,
         working: [`<b>Picture:</b> ${j.pic}.`, `That is a <b>${j.type}</b> joint — for example, your ${j.ex[0]}.`],
         finalAnswer: j.type, skill: 'joints',
@@ -248,7 +269,7 @@
       return {
         visual: jointSvg(j.type),
         prompt: 'Look at the joint in the picture. What type of joint is it?',
-        answer: ch(j.type, JOINTS.map((x) => x.type)),
+        answer: textAns(j.type, JOINT_ACCEPT[j.type], 'joint type'),
         hint: 'Look at the arrows: one way only, every way, a twist, or none at all.',
         working: [`<b>Picture:</b> ${j.pic}.`, `The arrows show it <b>${j.move}</b>.`, `So it is a <b>${j.type}</b> joint.`],
         finalAnswer: j.type, skill: 'joints',
@@ -307,17 +328,29 @@
       finalAnswer: bent ? 'bending up' : 'straightening down', skill: 'muscles',
     };
   }
+  const MR_TEXT = [
+    { p: 'What is a pair of muscles that pull in opposite directions called?', a: 'antagonistic pair', accept: ['an antagonistic pair', 'antagonistic muscles', 'antagonistic'], full: 'an antagonistic pair', r: 'Antagonists are opponents — they work against each other.' },
+    { p: 'Which muscle <b>contracts</b> to bend your arm at the elbow?', a: 'biceps', accept: ['the biceps'], full: 'the biceps', r: 'The biceps is at the front of your upper arm.' },
+    { p: 'Which muscle <b>contracts</b> to straighten your arm again?', a: 'triceps', accept: ['the triceps'], full: 'the triceps', r: 'The triceps is at the back of your upper arm.' },
+  ];
+  const MR_CHOICE = [
+    { p: 'What is the only thing a muscle can do?', a: 'pull (by getting shorter)', w: ['push (by getting longer)', 'both push and pull', 'stretch itself out'], r: 'A muscle contracts — it never pushes.' },
+    { p: 'Why do muscles have to work in <b>pairs</b>?', a: 'Because a muscle can only pull, so another muscle is needed to pull the bone back', w: ['Because one muscle is not strong enough', 'Because bones have two ends', 'So one can rest while the other works all day'], r: 'Nothing can push the bone back, so a second muscle pulls the other way.' },
+    { p: 'When the biceps contracts, what is the triceps doing?', a: 'relaxing and getting longer', w: ['contracting as well', 'staying exactly the same', 'pushing the bone'], r: 'One shortens while the other lengthens.' },
+    { p: 'What actually happens inside a muscle when it "contracts"?', a: 'It gets shorter and fatter, and pulls on the bone', w: ['It gets longer and thinner and pushes the bone', 'It fills up with air', 'It turns to bone'], r: 'Short and fat = pulling.' },
+  ];
   function muscleRule() {
-    const forms = [
-      { p: 'What is the only thing a muscle can do?', a: 'pull (by getting shorter)', w: ['push (by getting longer)', 'both push and pull', 'stretch itself out'], r: 'A muscle contracts — it never pushes.' },
-      { p: 'Why do muscles have to work in <b>pairs</b>?', a: 'Because a muscle can only pull, so another muscle is needed to pull the bone back', w: ['Because one muscle is not strong enough', 'Because bones have two ends', 'So one can rest while the other works all day'], r: 'Nothing can push the bone back, so a second muscle pulls the other way.' },
-      { p: 'What is a pair of muscles that pull in opposite directions called?', a: 'an antagonistic pair', w: ['a tendon pair', 'a ligament pair', 'a hinge pair'], r: 'Antagonists are opponents — they work against each other.' },
-      { p: 'Which muscle <b>contracts</b> to bend your arm at the elbow?', a: 'the biceps', w: ['the triceps', 'both together', 'neither — the bone bends itself'], r: 'The biceps is at the front of your upper arm.' },
-      { p: 'Which muscle <b>contracts</b> to straighten your arm again?', a: 'the triceps', w: ['the biceps', 'both together', 'neither — gravity does all of it'], r: 'The triceps is at the back of your upper arm.' },
-      { p: 'When the biceps contracts, what is the triceps doing?', a: 'relaxing and getting longer', w: ['contracting as well', 'staying exactly the same', 'pushing the bone'], r: 'One shortens while the other lengthens.' },
-      { p: 'What actually happens inside a muscle when it "contracts"?', a: 'It gets shorter and fatter, and pulls on the bone', w: ['It gets longer and thinner and pushes the bone', 'It fills up with air', 'It turns to bone'], r: 'Short and fat = pulling.' },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(0.5)) {
+      const f = R.pick(MR_TEXT);
+      return {
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one or two words'),
+        hint: f.r,
+        working: ['<b>Picture:</b> two people on either end of a rope. Only one can pull at a time.', f.r, `Answer: <b>${f.full}</b>.`],
+        finalAnswer: f.full, skill: 'muscles',
+      };
+    }
+    const f = R.pick(MR_CHOICE);
     return {
       prompt: f.p,
       answer: ch(f.a, f.w, 4),
@@ -341,7 +374,7 @@
     if (form === 2) {
       return {
         prompt: `Which part joins <b>${c.joins}</b>?`,
-        answer: ch(c.name, CONNECT.map((x) => x.name)),
+        answer: textAns(c.name, CONNECT_ACCEPT[c.name], 'one word'),
         hint: 'Tendon: muscle to bone. Ligament: bone to bone (they both start with the same letters as their job if you say "liga-bone").',
         working: ['<b>Picture:</b> a tow rope (tendon) and an elastic strap (ligament).', `That is a <b>${c.name}</b>.`],
         finalAnswer: c.name, skill: 'connect',

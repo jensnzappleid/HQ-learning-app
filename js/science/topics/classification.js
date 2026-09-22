@@ -62,6 +62,7 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   const KEY_STEPS = [
@@ -144,7 +145,7 @@
     if (R.chance(0.5)) {
       return {
         prompt: `In <b>MRS GREN</b>, what does <b>${m.label}</b> stand for?`,
-        answer: ch(m.word, MRSGREN.map((x) => x.word)),
+        answer: textAns(m.word, [], 'one word'),
         hint: 'Movement, Respiration, Sensitivity, Growth, Reproduction, Excretion, Nutrition.',
         working: ['<b>Picture:</b> a checklist of 7 boxes. Something is alive only if it ticks every box.', `In MRS GREN, ${m.label} is <b>${m.word}</b>.`],
         finalAnswer: m.word, skill: 'mrs-gren',
@@ -164,7 +165,7 @@
     return {
       visual: level >= 2 ? undefined : mrsGrenSvg(-1),
       prompt: `Which sign of life is this: <b>${e}</b>?`,
-      answer: ch(m.word, MRSGREN.map((x) => x.word)),
+      answer: textAns(m.word, [], 'one word'),
       hint: 'Run through MRS GREN and stop at the one that fits.',
       working: ['<b>Picture:</b> tick down the MRS GREN checklist until one fits.', `${cap(e)} is an example of <b>${m.word}</b> — ${m.mean}.`],
       finalAnswer: m.word, skill: 'mrs-gren',
@@ -176,7 +177,7 @@
     return {
       visual: mrsGrenSvg(i),
       prompt: 'One sign of life has been rubbed off the list. Which one is missing?',
-      answer: ch(m.word, MRSGREN.map((x) => x.word)),
+      answer: textAns(m.word, [], 'one word'),
       hint: 'Say the whole list out loud: Movement, Respiration, Sensitivity, Growth, Reproduction, Excretion, Nutrition.',
       working: ['<b>Picture:</b> MRS GREN is a name you can remember — each letter is one sign.', `The gap is in the row for <b>${m.word}</b>.`, `It means: ${m.mean}.`],
       finalAnswer: m.word, skill: 'mrs-gren',
@@ -195,7 +196,7 @@
     }
     return {
       prompt: `Is <b>${t.thing}</b> living or non-living?`,
-      answer: ch(t.alive ? 'Living' : 'Non-living', ['Living', 'Non-living'], 2),
+      answer: textAns(t.alive ? 'living' : 'non-living', t.alive ? [] : ['not living', 'nonliving', 'non living'], 'one word'),
       hint: `It is tempting to say the other one, because ${t.trap}.`,
       working: ['<b>Picture:</b> the MRS GREN checklist — all seven boxes must tick.', `1. Tempting, because ${t.trap}.`, `2. But ${t.why}.`, `So it is <b>${t.alive ? 'living' : 'non-living'}</b>.`],
       finalAnswer: t.alive ? 'Living' : 'Non-living', skill: 'living',
@@ -206,7 +207,7 @@
     const e = R.pick(k.ex);
     return {
       prompt: `Which kingdom does <b>${e}</b> belong to?`,
-      answer: ch(k.name, KINGDOMS.map((x) => x.name)),
+      answer: textAns(k.name, [], 'one word'),
       hint: 'Ask: does it make its own food (plants), eat other things and move (animals), soak food up without moving (fungi), or is it a single tiny cell (protists / bacteria)?',
       working: ['<b>Picture:</b> five big sorting boxes on the floor.', `${cap(e)} is ${k.feature}.`, `So it goes in the <b>${k.name}</b> box.`],
       finalAnswer: k.name, skill: 'kingdoms',
@@ -217,7 +218,7 @@
     if (R.chance(0.5)) {
       return {
         prompt: `Which kingdom is described: <b>${k.feature}</b>?`,
-        answer: ch(k.name, KINGDOMS.map((x) => x.name)),
+        answer: textAns(k.name, [], 'one word'),
         hint: 'Five kingdoms: animals, plants, fungi, protists, bacteria.',
         working: ['<b>Picture:</b> five sorting boxes.', `That description matches the <b>${k.name}</b>.`, `Example: ${k.ex[0]}.`],
         finalAnswer: k.name, skill: 'kingdoms',
@@ -237,7 +238,7 @@
     return {
       visual: level === 1 ? backboneSvg() : undefined,
       prompt: `Is <b>${a}</b> a vertebrate or an invertebrate?`,
-      answer: ch(isVert ? 'vertebrate' : 'invertebrate', ['vertebrate', 'invertebrate'], 2),
+      answer: textAns(isVert ? 'vertebrate' : 'invertebrate', [], 'one word'),
       hint: 'Vertebrate = has a backbone (a spine inside). Invertebrate = no backbone.',
       working: ['<b>Picture:</b> run your finger down your own spine — that is a backbone.', `1. Does ${a} have a backbone inside? <b>${isVert ? 'Yes' : 'No'}</b>.`, `So it is an <b>${isVert ? 'vertebrate' : 'invertebrate'}</b>.`],
       finalAnswer: isVert ? 'vertebrate' : 'invertebrate', skill: 'vert-invert',
@@ -248,7 +249,7 @@
     const g = GROUPS.find((x) => x.name === v.group);
     return {
       prompt: `Which vertebrate group does <b>${v.animal}</b> belong to?`,
-      answer: ch(v.group, GROUPS.map((x) => x.name)),
+      answer: textAns(v.group, [], 'one word'),
       hint: 'Look at the outside first: feathers → bird, fur → mammal, dry scales → reptile, wet scales and fins → fish, moist skin → amphibian.',
       working: ['<b>Picture:</b> what is it wearing? Feathers, fur, dry scales, wet scales or bare damp skin?', `${cap(v.animal)} has <b>${g.skin}</b>.`, `So it is a <b>${v.group}</b>.`],
       finalAnswer: v.group, skill: 'groups',
@@ -266,10 +267,10 @@
       extra: `Which of these is true of a <b>${g.name}</b>?`,
     };
     const right = g[which];
-    const wrongs = which === 'temp' ? ['warm-blooded', 'cold-blooded'] : GROUPS.map((x) => x[which]);
+    const wrongs = GROUPS.map((x) => x[which]);
     return {
       prompt: prompts[which],
-      answer: ch(right, wrongs, which === 'temp' ? 2 : 4),
+      answer: which === 'temp' ? textAns(right, [], 'one word') : ch(right, wrongs, 4),
       hint: `Picture a real ${g.name} — for instance ${VERTS.filter((v) => v.group === g.name)[0].animal}.`,
       working: [`<b>Picture:</b> ${VERTS.filter((v) => v.group === g.name)[0].animal}.`, `A ${g.name}: skin = ${g.skin}, young = ${g.young}, ${g.temp}.`, `So the answer is <b>${right}</b>.`],
       finalAnswer: right, skill: 'groups',
@@ -280,7 +281,7 @@
     const which = R.pick(['skin', 'young', 'extra']);
     return {
       prompt: `Which vertebrate group <b>${which === 'skin' ? 'is covered in ' + g.skin : which === 'young' ? g.young : g.extra}</b>?`,
-      answer: ch(g.name, GROUPS.map((x) => x.name)),
+      answer: textAns(g.name, [], 'one word'),
       hint: 'Go through the five: fish, amphibian, reptile, bird, mammal.',
       working: ['<b>Picture:</b> five animal boxes — fish, amphibian, reptile, bird, mammal.', `That belongs to the <b>${g.name}</b> group.`],
       finalAnswer: g.name, skill: 'groups',
@@ -294,7 +295,7 @@
       return {
         visual: keySvg(null),
         prompt: `Follow the key for <b>${v.animal}</b>. Which group do you end up at?`,
-        answer: ch(v.group.toUpperCase(), GROUPS.map((x) => x.name.toUpperCase())),
+        answer: textAns(v.group, [], 'one word'),
         hint: `Start at question 1 and answer honestly. ${cap(v.animal)} has ${g.skin}.`,
         working: ['<b>Picture:</b> a staircase of yes/no questions — you can only go down or out.', `1. Feathers? <b>${v.group === 'bird' ? 'Yes → BIRD.' : 'No → go to 2.'}</b>`, ...(v.group === 'bird' ? [] : [`2. Fur or hair? <b>${v.group === 'mammal' ? 'Yes → MAMMAL.' : 'No → go to 3.'}</b>`]), ...(['bird', 'mammal'].includes(v.group) ? [] : [`3. Fins and wet scales? <b>${v.group === 'fish' ? 'Yes → FISH.' : 'No → go to 4.'}</b>`]), ...(['bird', 'mammal', 'fish'].includes(v.group) ? [] : [`4. Dry scales? <b>${v.group === 'reptile' ? 'Yes → REPTILE.' : 'No → AMPHIBIAN.'}</b>`])],
         finalAnswer: v.group.toUpperCase(), skill: 'keys',

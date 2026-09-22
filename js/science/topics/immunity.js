@@ -11,17 +11,17 @@
   /** what each kind of microbe actually looks like down a microscope */
   const SHAPES = [
     { key: 'rod', kind: 'bacteria', name: 'a rod (bacillus)', look: 'a tiny stretched sausage or a grain of rice',
-      ex: 'the bacteria in salmonella food poisoning and in TB' },
+      ex: 'the bacteria in salmonella food poisoning and in TB', short: 'rod', shortAccept: ['a rod', 'bacillus', 'a bacillus', 'rods'] },
     { key: 'sphere', kind: 'bacteria', name: 'a sphere (coccus)', look: 'a tiny ball, often stuck together in chains or clusters like a bunch of grapes',
-      ex: 'the bacteria that cause strep throat and infected cuts' },
+      ex: 'the bacteria that cause strep throat and infected cuts', short: 'sphere', shortAccept: ['a sphere', 'coccus', 'a coccus', 'spheres', 'a ball', 'round'] },
     { key: 'spiral', kind: 'bacteria', name: 'a spiral', look: 'a corkscrew or a stretched spring',
-      ex: 'the bacteria that cause cholera (a comma shape) and leptospirosis' },
+      ex: 'the bacteria that cause cholera (a comma shape) and leptospirosis', short: 'spiral', shortAccept: ['a spiral', 'spirals', 'corkscrew', 'a corkscrew shape'] },
     { key: 'virus', kind: 'viruses', name: 'a package in a coat', look: 'a spiky ball or a tiny lander with legs — a protein coat with instructions folded up inside, and no cell parts at all',
-      ex: 'the flu virus, measles and HIV' },
+      ex: 'the flu virus, measles and HIV', short: 'virus', shortAccept: ['a virus', 'viruses'] },
     { key: 'yeast', kind: 'fungi', name: 'a round budding cell', look: 'a fat oval cell with a little bud growing off the side, ready to break away',
-      ex: 'the yeast that makes bread rise' },
+      ex: 'the yeast that makes bread rise', short: 'yeast', shortAccept: ['a yeast cell', 'a yeast', 'budding yeast'] },
     { key: 'mould', kind: 'fungi', name: 'fuzzy threads (hyphae)', look: 'a tangle of fine threads with round spore heads on stalks, like tiny lollipops',
-      ex: "the grey fuzz on old bread, and athlete's foot" },
+      ex: "the grey fuzz on old bread, and athlete's foot", short: 'mould', shortAccept: ['mold', 'hyphae', 'fuzzy threads', 'a mould'] },
   ];
 
   /** the class disease list: microbe type and how it spreads */
@@ -40,6 +40,12 @@
     { name: 'measles', m: 'a virus', r: 'droplets in the air — one of the most catching of all' },
   ];
   const MTYPES = ['a virus', 'bacteria', 'a fungus', 'a parasite carried by mosquitoes'];
+  const MTYPE_SHORT = {
+    'a virus': { value: 'virus', accept: ['a virus', 'viruses'] },
+    'bacteria': { value: 'bacteria', accept: ['a bacterium', 'bacterial'] },
+    'a fungus': { value: 'fungus', accept: ['a fungus', 'fungi'] },
+    'a parasite carried by mosquitoes': { value: 'parasite', accept: ['a parasite', 'a parasite carried by mosquitoes', 'mosquito parasite'] },
+  };
 
   /** first line of defence — the barriers that keep microbes out */
   const BARRIERS = [
@@ -63,6 +69,13 @@
       use: 'protecting you before you ever meet the real microbe', no: 'it is not a cure — it does nothing once you are already ill', ex: 'the measles and tetanus vaccines' },
   ];
 
+  const MED_SHORT = {
+    'an antibiotic': { value: 'antibiotic', accept: ['an antibiotic', 'antibiotics'] },
+    'an antiseptic': { value: 'antiseptic', accept: ['an antiseptic', 'antiseptics'] },
+    'a disinfectant': { value: 'disinfectant', accept: ['a disinfectant', 'disinfectants'] },
+    'a vaccine': { value: 'vaccine', accept: ['a vaccine', 'vaccines'] },
+  };
+
   /** shuffled multi-choice, value = index of the correct option */
   function choice(correct, wrongs, n = 4) {
     const pool = wrongs.filter((w) => w !== correct);
@@ -71,6 +84,7 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
   /* ---------- diagrams ---------- */
@@ -206,7 +220,7 @@
       return {
         visual: shapesSvg(sh.key),
         prompt: `Down a microscope this looks like <b>${sh.look}</b>. What is it?`,
-        answer: ch(sh.name, SHAPES.map((x) => x.name), 4),
+        answer: textAns(sh.short, sh.shortAccept, 'one word'),
         hint: 'Bacteria come in rods, spheres and spirals. Yeast buds. Mould makes threads. A virus is not a cell at all.',
         working: [`<b>Picture:</b> ${sh.look}.`, `That is <b>${sh.name}</b> — one of the ${sh.kind}.`, `You would find it in: ${sh.ex}.`],
         finalAnswer: sh.name, skill: 'looks',
@@ -227,7 +241,7 @@
       { p: 'Bacteria come in three main shapes. Which three?', a: 'rods, spheres and spirals', w: ['squares, triangles and stars', 'threads, buds and spikes', 'they are all exactly the same shape'] },
       { p: 'How can you tell a virus apart from a bacterium under a very powerful microscope?', a: 'A bacterium is a whole cell with a wall and contents; a virus is just a coat with instructions inside, and it is about 20× smaller', w: ['A virus is much bigger and greener', 'A virus has a nucleus and a bacterium does not', 'You cannot — they look identical'] },
       { p: 'What does a <b>mould</b> look like close up?', a: 'a tangle of fine threads with round spore heads on stalks', w: ['a single round cell with a bud', 'a spiky ball with nothing inside', 'a long smooth rod'] },
-      { p: 'Yeast is drawn with a little bump on the side. What is the bump?', a: 'a bud — a new yeast cell growing, which will break off', w: ['its nucleus poking out', 'a virus attacking it', 'a spore head full of spores'] },
+      { p: 'Yeast is drawn with a little bump on the side. What is the bump?', a: 'a bud — a new yeast cell growing, which will break off', w: ['its nucleus poking out', 'a virus attacking it', 'a spore head full of spores'], short: 'bud', shortAccept: ['a bud', 'budding', 'a new cell budding off'] },
       { p: 'Why can you see bacteria with a school microscope but never a virus?', a: 'A bacterium is about 2 µm across; a virus is about 0.1 µm, so it needs an electron microscope', w: ['Viruses are transparent, so no microscope shows them', 'Viruses are far bigger and will not fit on a slide', 'Viruses only exist inside sealed containers'] },
       { p: 'Which microbes are made of <b>cells</b>?', a: 'bacteria and fungi — a virus is not a cell', w: ['viruses and bacteria — fungi are not cells', 'all three of them', 'none of them'] },
     ];
@@ -235,7 +249,7 @@
     return {
       visual: level <= 2 ? shapesSvg() : undefined,
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Rods, spheres, spirals for bacteria. Buds for yeast, threads for mould. A virus is a coat with instructions.',
       working: ['<b>Picture:</b> line them up — sausage, ball, corkscrew, spiky package, budding oval, fuzzy threads.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'looks',
@@ -245,9 +259,10 @@
   function diseaseQ(level) {
     const d = R.pick(DISEASES);
     if (R.chance(0.5)) {
+      const short = MTYPE_SHORT[d.m];
       return {
         prompt: `Which kind of microbe causes <b>${d.name}</b>?`,
-        answer: ch(d.m, MTYPES, 4),
+        answer: textAns(short.value, short.accept, 'one word'),
         hint: 'Colds, flu, measles, rubella, chickenpox and HIV are all viruses.',
         working: [`<b>${cap(d.name)}</b> is caused by <b>${d.m}</b>.`, `It spreads by: ${d.r}.`],
         finalAnswer: d.m, skill: 'diseases',
@@ -307,7 +322,7 @@
       { p: 'Where is the <b>antigen</b>?', a: 'on the outside of the microbe — it is the microbe’s marker', w: ['on the outside of a white blood cell', 'inside your bones', 'in the medicine you swallow'], fit: true },
       { p: 'What do antibodies actually <b>do</b> to a microbe?', a: 'They lock onto its antigen, which clumps the microbes together and marks them for the phagocytes to eat', w: ['They cut the microbe in half with a sharp edge', 'They push the microbe back out through the skin', 'They turn the microbe into a useful gut bacterium'], fit: true },
       { p: 'Why does the antibody for measles do nothing at all against chickenpox?', a: 'Antibodies are made to fit one antigen only — the chickenpox antigen is a different shape', w: ['Chickenpox has no antigen at all', 'Antibodies only work on the disease you had most recently', 'The measles antibody wears out after a year'], fit: false },
-      { p: 'Which cells make antibodies?', a: 'white blood cells — the ones called lymphocytes', w: ['red blood cells', 'skin cells', 'the bacteria in your gut'], fit: true },
+      { p: 'Which cells make antibodies?', a: 'white blood cells — the ones called lymphocytes', w: ['red blood cells', 'skin cells', 'the bacteria in your gut'], fit: true, short: 'lymphocytes', shortAccept: ['white blood cells', 'a lymphocyte', 'lymphocyte'] },
       { p: 'An antibody is often drawn as a <b>Y</b> shape. Why?', a: 'The two arms of the Y are the part that grips the antigen, and each antibody’s arms are a different shape', w: ['Y stands for "yellow", the colour they are', 'The Y shape helps them swim through the blood', 'It is just how they are drawn — the shape means nothing'], fit: true },
       { p: 'Why does it take <b>days</b> to get better the first time you catch something?', a: 'Your body has to find the lymphocyte with the right-shaped antibody and then make millions of copies, and that takes time', w: ['The microbe has to finish growing first', 'Antibodies only work at night', 'Your phagocytes have to be replaced first'], fit: true },
     ];
@@ -315,7 +330,7 @@
     return {
       visual: level <= 2 ? antibodySvg(f.fit) : undefined,
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Antigen = the lock on the microbe. Antibody = the key your body cuts to fit it. One key, one lock.',
       working: ['<b>Picture:</b> the microbe wears a name badge (the <b>antigen</b>); your body makes handcuffs (the <b>antibody</b>) shaped to fit that badge and nothing else.', '1. Lymphocyte finds the matching shape.', '2. Makes millions of copies of that antibody.', '3. They lock on, clump the microbes and mark them.', '4. Phagocytes eat the clumps.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'antibodies',
@@ -347,14 +362,14 @@
       { p: 'What is in a <b>vaccine</b>?', a: 'a dead or weakened microbe, or just a harmless piece of one — the part that carries the antigen', w: ['a full-strength living microbe', 'an antibiotic', 'a vitamin that kills microbes'] },
       { p: 'Put the steps of how a vaccine works in order.', a: 'Vaccine carries the antigen → lymphocytes make antibodies → memory cells are kept → the real microbe is destroyed fast', w: ['Vaccine kills the microbes already inside you → you get better', 'Vaccine coats your skin → microbes slide off', 'Vaccine gives you the disease → you get better → you are immune'] },
       { p: 'Why does a vaccine <b>not</b> make you ill?', a: 'The microbe in it is dead or weakened, so it carries the antigen but cannot multiply and cause the disease', w: ['It is not really a microbe, it is an antiseptic', 'It does make you ill — that is how it works', 'It works only on people who are already immune'] },
-      { p: 'What is the <b>one thing</b> a vaccine has to contain for it to work at all?', a: 'the antigen — the marker your body learns to recognise', w: ['live microbes, or it cannot teach anything', 'an antibiotic to kill any bacteria present', 'sugar, to feed the white blood cells'] },
+      { p: 'What is the <b>one thing</b> a vaccine has to contain for it to work at all?', a: 'the antigen — the marker your body learns to recognise', w: ['live microbes, or it cannot teach anything', 'an antibiotic to kill any bacteria present', 'sugar, to feed the white blood cells'], short: 'antigen', shortAccept: ['the antigen', 'an antigen'] },
       { p: 'Is a vaccine any use once you are already ill with that disease?', a: 'No — a vaccine trains you beforehand. Once you are ill you need your own defences, or a medicine', w: ['Yes, a vaccine cures any disease straight away', 'Yes, but only for bacterial diseases', 'Yes, but it takes a year to work'] },
       { p: 'Why does vaccinating most of a school protect the few children who cannot be vaccinated?', a: 'With almost nobody left to catch it, the microbe has no chain of people to travel along', w: ['The vaccine drifts through the air to them', 'Unvaccinated children stop being able to catch it after a year', 'It does not protect them at all'] },
     ];
     const f = R.pick(level === 1 ? forms.slice(0, 3) : forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'A vaccine is showing the guards a photo of the burglar, before he ever turns up.',
       working: ['<b>Picture:</b> a photo of the burglar, handed to the guards in advance.', '1. The vaccine carries the <b>antigen</b> but cannot make you ill.', '2. Lymphocytes make the matching <b>antibodies</b>.', '3. <b>Memory cells</b> are kept.', '4. The real microbe arrives later and is destroyed before you feel a thing — you are <b>immune</b>.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'vaccine',
@@ -374,9 +389,10 @@
       };
     }
     if (form === 2) {
+      const short = MED_SHORT[m.name];
       return {
         prompt: `Which of these would you use for <b>${m.use}</b>?`,
-        answer: ch(m.name, MEDICINES.map((x) => x.name), 4),
+        answer: textAns(short.value, short.accept, 'one word'),
         hint: 'Match the job to the right one of the four.',
         working: [`<b>Picture:</b> inside you → antibiotic; on your skin → antiseptic; on the bench → disinfectant; before you are ill → vaccine.`, `For ${m.use} you want <b>${m.name}</b>.`],
         finalAnswer: m.name, skill: 'medicines',
@@ -414,18 +430,18 @@
 
   function defenceOrderQ(level) {
     const forms = [
-      { p: 'Which line of defence is your <b>skin</b>?', a: 'the first — it keeps microbes out altogether', w: ['the second — it eats microbes', 'the third — it makes antibodies', 'it is not a defence at all'], k: 1 },
-      { p: 'Which line of defence are <b>phagocytes</b>?', a: 'the second — they swallow the microbes that get in', w: ['the first — they are a barrier on the outside', 'the third — they make antibodies', 'they are not part of your defences'], k: 2 },
-      { p: 'Which line of defence are <b>antibodies</b>?', a: 'the third — they tag one particular microbe, and memory cells remember it', w: ['the first — they coat your skin', 'the second — they swallow microbes whole', 'they are made by the microbe, not by you'], k: 3 },
-      { p: 'You swallow food with bacteria on it. Which defence meets them first?', a: 'stomach acid', w: ['phagocytes', 'antibodies', 'a scab'], k: 1 },
-      { p: 'A microbe gets in through a scraped knee. Which defence deals with it now?', a: 'white blood cells inside your blood', w: ['stomach acid', 'the mucus in your nose', 'your tears'], k: 2 },
+      { p: 'Which line of defence is your <b>skin</b>?', a: 'the first — it keeps microbes out altogether', w: ['the second — it eats microbes', 'the third — it makes antibodies', 'it is not a defence at all'], k: 1, short: 'first', shortAccept: ['1st', 'the first line', 'first line'] },
+      { p: 'Which line of defence are <b>phagocytes</b>?', a: 'the second — they swallow the microbes that get in', w: ['the first — they are a barrier on the outside', 'the third — they make antibodies', 'they are not part of your defences'], k: 2, short: 'second', shortAccept: ['2nd', 'the second line', 'second line'] },
+      { p: 'Which line of defence are <b>antibodies</b>?', a: 'the third — they tag one particular microbe, and memory cells remember it', w: ['the first — they coat your skin', 'the second — they swallow microbes whole', 'they are made by the microbe, not by you'], k: 3, short: 'third', shortAccept: ['3rd', 'the third line', 'third line'] },
+      { p: 'You swallow food with bacteria on it. Which defence meets them first?', a: 'stomach acid', w: ['phagocytes', 'antibodies', 'a scab'], k: 1, short: 'stomach acid', shortAccept: ['acid', 'your stomach acid'] },
+      { p: 'A microbe gets in through a scraped knee. Which defence deals with it now?', a: 'white blood cells inside your blood', w: ['stomach acid', 'the mucus in your nose', 'your tears'], k: 2, short: 'white blood cells', shortAccept: ['phagocytes', 'blood cells', 'a white blood cell'] },
       { p: 'Put the three lines of defence in the right order.', a: 'barriers keep them out → phagocytes eat the ones that get in → antibodies tag them and memory cells remember', w: ['antibodies → barriers → phagocytes', 'phagocytes → barriers → antibodies', 'memory cells → antibodies → skin'], k: 0 },
     ];
     const f = R.pick(level === 1 ? forms.slice(0, 4) : forms);
     return {
       visual: level <= 2 ? linesSvg(f.k || undefined) : undefined,
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Out → eat → tag and remember.',
       working: ['<b>Picture:</b> a fence, then guards who swallow, then guards who handcuff and never forget a face.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'lines',

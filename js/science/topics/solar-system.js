@@ -67,6 +67,8 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const names = (not) => PLANETS.map((p) => p.n).filter((x) => x !== not);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  const BODY_ACCEPT = { star: ['a star'], planet: ['a planet'], moon: ['a moon'], asteroid: ['an asteroid'], comet: ['a comet'], galaxy: ['a galaxy'] };
 
   /* ---------- diagrams ---------- */
   function planetsSvg(opts) {
@@ -144,11 +146,10 @@
         finalAnswer: `${p.i} (${ORDINAL[p.i]})`, skill: 'order',
       };
     }
-    const c = choice(p.n, names(p.n));
     return {
       visual: planetsSvg({ highlight: p.n }),
       prompt: `Which planet is <b>${ORDINAL[p.i]}</b> from the Sun?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.n, [], 'type the planet name'),
       hint: 'My Very Easy Method Just Speeds Up Names.',
       working: ['<b>Picture:</b> the planets lined up in a row leaving the Sun.', `Count out: ${PLANETS.slice(0, p.i).map((q) => q.n).join(' → ')}.`, `The ${ORDINAL[p.i]} planet is <b>${p.n}</b>.`],
       finalAnswer: p.n, skill: 'order',
@@ -160,10 +161,9 @@
     const out = R.chance(0.5) || k === 0;
     const from = out ? PLANETS[k] : PLANETS[k + 1];
     const ans = out ? PLANETS[k + 1] : PLANETS[k];
-    const c = choice(ans.n, names(ans.n));
     return {
       prompt: `Which planet comes straight <b>${out ? 'after' : 'before'}</b> ${from.n}${out ? ', going away from the Sun' : ', going back towards the Sun'}?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(ans.n, [], 'type the planet name'),
       hint: 'Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.',
       working: ['<b>Picture:</b> the planets in a row, Sun on the left.', `${from.n} is number ${from.i}.`, `So the one ${out ? 'after' : 'before'} it is number ${ans.i} — <b>${ans.n}</b>.`],
       finalAnswer: ans.n, skill: 'order',
@@ -193,10 +193,9 @@
   function rockyOrGasQ(level) {
     const p = R.pick(PLANETS);
     const correct = p.type === 'rocky' ? 'A rocky planet (small, solid ground)' : 'A gas giant (huge, no solid surface)';
-    const c = choice(correct, ['A rocky planet (small, solid ground)', 'A gas giant (huge, no solid surface)', 'A star that makes its own light', 'A moon orbiting another planet'], 4);
     return {
       prompt: `Is <b>${p.n}</b> a rocky planet or a gas giant?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.type === 'rocky' ? 'rocky planet' : 'gas giant', p.type === 'rocky' ? ['rocky', 'a rocky planet'] : ['gas', 'a gas giant'], 'two words'),
       hint: 'The first four (Mercury, Venus, Earth, Mars) are rocky. The outer four are gas giants.',
       working: ['<b>Picture:</b> four small marbles close to the Sun, then four beach balls far out.', `${p.n} is planet number ${p.i}.`, `Number ${p.i} is in the ${p.i <= 4 ? 'inner four' : 'outer four'}, so it is <b>${p.type === 'rocky' ? 'a rocky planet' : 'a gas giant'}</b>.`],
       finalAnswer: p.type === 'rocky' ? 'A rocky planet' : 'A gas giant', skill: 'rocky-gas',
@@ -215,10 +214,9 @@
         finalAnswer: p.feature, skill: 'features',
       };
     }
-    const c = choice(p.n, names(p.n));
     return {
       prompt: `Which planet is <b>${p.feature}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.n, [], 'type the planet name'),
       hint: `Its other clue: ${p.clue}.`,
       working: ['<b>Picture:</b> matching each planet to its one famous fact.', `That describes <b>${p.n}</b>.`],
       finalAnswer: p.n, skill: 'features',
@@ -227,10 +225,9 @@
 
   function superlativeQ(level) {
     const s = R.pick(SUPERLATIVE);
-    const c = choice(s.a, names(s.a));
     return {
       prompt: `Which planet is <b>${s.q}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(s.a, [], 'type the planet name'),
       hint: 'Picture the row of planets and their sizes.',
       working: ['<b>Picture:</b> the planets lined up from the Sun outwards.', `${s.q.charAt(0).toUpperCase() + s.q.slice(1)} is <b>${s.a}</b>.`],
       finalAnswer: s.a, skill: 'features',
@@ -249,10 +246,9 @@
         finalAnswer: b.def, skill: 'bodies',
       };
     }
-    const c = choice(b.name, BODIES.map((x) => x.name));
     return {
       prompt: `Which word means "${b.def}"?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(b.name, BODY_ACCEPT[b.name], 'one word'),
       hint: `One example is ${b.eg}.`,
       working: [`<b>Picture:</b> ${b.eg}.`, `That is a <b>${b.name}</b>.`],
       finalAnswer: b.name, skill: 'bodies',
@@ -270,10 +266,9 @@
       { thing: 'Sirius, the brightest star in the night sky', kind: 'a star', why: 'it makes its own light' },
     ];
     const it = R.pick(items);
-    const c = choice(it.kind, ['a star', 'a planet', 'a moon', 'a comet'], 4);
     return {
       prompt: `Is <b>${it.thing}</b> a star, a planet, a moon or a comet?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(it.kind.replace(/^a /, ''), [it.kind], 'one word'),
       hint: 'Star = makes its own light. Planet = orbits a star. Moon = orbits a planet.',
       working: ['<b>Picture:</b> a torch (star), a ball lit by the torch (planet), a smaller ball going round the ball (moon).', `${it.thing.charAt(0).toUpperCase() + it.thing.slice(1)}: ${it.why}.`, `So it is <b>${it.kind}</b>.`],
       finalAnswer: it.kind, skill: 'bodies',

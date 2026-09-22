@@ -9,31 +9,73 @@
   /* s = short label that fits in a wheel box · f = the full name used in questions */
   const CYCLES = [
     { key: 'plant', name: 'a flowering plant', kind: 'plant', group: 'plant',
-      stages: [{ s: 'seed', f: 'seed' }, { s: 'seedling', f: 'seedling' }, { s: 'adult plant', f: 'adult plant' }, { s: 'flower', f: 'flower, which makes new seeds' }],
+      stages: [
+        { s: 'seed', f: 'seed', short: 'seed', shortAccept: ['a seed'] },
+        { s: 'seedling', f: 'seedling', short: 'seedling', shortAccept: ['a seedling'] },
+        { s: 'adult plant', f: 'adult plant', short: 'adult plant', shortAccept: ['an adult plant', 'the adult plant'] },
+        { s: 'flower', f: 'flower, which makes new seeds', short: 'flower', shortAccept: ['a flower', 'the flower'] },
+      ],
       note: 'the flower makes the seeds, so the wheel starts all over again' },
     { key: 'butterfly', name: 'a monarch butterfly', kind: 'complete', group: 'insect',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'caterpillar', f: 'larva (caterpillar)' }, { s: 'chrysalis', f: 'pupa (chrysalis)' }, { s: 'butterfly', f: 'adult butterfly' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'caterpillar', f: 'larva (caterpillar)', short: 'caterpillar', shortAccept: ['a caterpillar', 'larva', 'a larva'] },
+        { s: 'chrysalis', f: 'pupa (chrysalis)', short: 'chrysalis', shortAccept: ['a chrysalis', 'pupa', 'a pupa'] },
+        { s: 'butterfly', f: 'adult butterfly', short: 'butterfly', shortAccept: ['a butterfly', 'an adult butterfly', 'adult butterfly'] },
+      ],
       note: 'monarch caterpillars eat swan plants in New Zealand gardens' },
     { key: 'huhu', name: 'a huhu beetle', kind: 'complete', group: 'insect',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'huhu grub', f: 'larva (huhu grub)' }, { s: 'pupa', f: 'pupa' }, { s: 'beetle', f: 'adult huhu beetle' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'huhu grub', f: 'larva (huhu grub)', short: 'huhu grub', shortAccept: ['a huhu grub', 'larva', 'a larva', 'grub'] },
+        { s: 'pupa', f: 'pupa', short: 'pupa', shortAccept: ['a pupa'] },
+        { s: 'beetle', f: 'adult huhu beetle', short: 'beetle', shortAccept: ['a beetle', 'adult beetle', 'huhu beetle', 'adult huhu beetle'] },
+      ],
       note: 'the grub spends years eating rotting logs before it changes' },
     { key: 'weta', name: 'a weta', kind: 'incomplete', group: 'insect',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'nymph', f: 'nymph' }, { s: 'adult weta', f: 'adult weta' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'nymph', f: 'nymph', short: 'nymph', shortAccept: ['a nymph'] },
+        { s: 'adult weta', f: 'adult weta', short: 'adult weta', shortAccept: ['an adult weta', 'weta', 'adult'] },
+      ],
       note: 'a weta nymph already looks like a small adult — it just gets bigger' },
     { key: 'cicada', name: 'a cicada', kind: 'incomplete', group: 'insect',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'nymph', f: 'nymph' }, { s: 'cicada', f: 'adult cicada' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'nymph', f: 'nymph', short: 'nymph', shortAccept: ['a nymph'] },
+        { s: 'cicada', f: 'adult cicada', short: 'cicada', shortAccept: ['a cicada', 'adult cicada', 'an adult cicada'] },
+      ],
       note: 'the nymph lives underground for years, then climbs a tree and sheds its skin' },
     { key: 'dragonfly', name: 'a dragonfly', kind: 'incomplete', group: 'insect',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'nymph', f: 'nymph' }, { s: 'dragonfly', f: 'adult dragonfly' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'nymph', f: 'nymph', short: 'nymph', shortAccept: ['a nymph'] },
+        { s: 'dragonfly', f: 'adult dragonfly', short: 'dragonfly', shortAccept: ['a dragonfly', 'adult dragonfly', 'an adult dragonfly'] },
+      ],
       note: 'the nymph hunts underwater before it climbs out and flies' },
     { key: 'frog', name: 'a frog', kind: 'frog', group: 'amphibian',
-      stages: [{ s: 'frogspawn', f: 'egg (frogspawn)' }, { s: 'tadpole', f: 'tadpole' }, { s: 'froglet', f: 'froglet' }, { s: 'adult frog', f: 'adult frog' }],
+      stages: [
+        { s: 'frogspawn', f: 'egg (frogspawn)', short: 'frogspawn', shortAccept: ['frog spawn', 'eggs', 'frog eggs', 'egg'] },
+        { s: 'tadpole', f: 'tadpole', short: 'tadpole', shortAccept: ['a tadpole'] },
+        { s: 'froglet', f: 'froglet', short: 'froglet', shortAccept: ['a froglet'] },
+        { s: 'adult frog', f: 'adult frog', short: 'adult frog', shortAccept: ['an adult frog', 'frog', 'adult'] },
+      ],
       note: 'the tadpole grows legs, loses its tail and swaps gills for lungs' },
     { key: 'kiwi', name: 'a kiwi', kind: 'bird', group: 'bird',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'chick', f: 'chick' }, { s: 'juvenile', f: 'juvenile' }, { s: 'adult kiwi', f: 'adult kiwi' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'chick', f: 'chick', short: 'chick', shortAccept: ['a chick'] },
+        { s: 'juvenile', f: 'juvenile', short: 'juvenile', shortAccept: ['a juvenile'] },
+        { s: 'adult kiwi', f: 'adult kiwi', short: 'adult kiwi', shortAccept: ['an adult kiwi', 'kiwi', 'adult'] },
+      ],
       note: 'the male kiwi sits on the huge egg for about 80 days' },
     { key: 'tuatara', name: 'a tuatara', kind: 'reptile', group: 'reptile',
-      stages: [{ s: 'egg', f: 'egg' }, { s: 'hatchling', f: 'hatchling' }, { s: 'juvenile', f: 'juvenile' }, { s: 'adult tuatara', f: 'adult tuatara' }],
+      stages: [
+        { s: 'egg', f: 'egg', short: 'egg', shortAccept: ['an egg'] },
+        { s: 'hatchling', f: 'hatchling', short: 'hatchling', shortAccept: ['a hatchling'] },
+        { s: 'juvenile', f: 'juvenile', short: 'juvenile', shortAccept: ['a juvenile'] },
+        { s: 'adult tuatara', f: 'adult tuatara', short: 'adult tuatara', shortAccept: ['an adult tuatara', 'tuatara', 'adult'] },
+      ],
       note: 'a tuatara egg takes about a whole year to hatch' },
     { key: 'mammal', name: 'a mammal, like a dog', kind: 'mammal', group: 'mammal',
       stages: [{ s: 'born alive', f: 'born alive' }, { s: 'fed on milk', f: 'fed on milk' }, { s: 'young', f: 'young' }, { s: 'adult', f: 'adult' }],
@@ -62,11 +104,11 @@
   ];
 
   const NZFACTS = [
-    { q: 'How long does a tuatara egg take to hatch?', a: 'about a whole year', w: ['about 3 days', 'about 3 weeks', 'about 10 years'] },
-    { q: 'What do monarch caterpillars eat in a New Zealand garden?', a: 'swan plants', w: ['harakeke (flax) leaves', 'rotting logs', 'grass seed'] },
+    { q: 'How long does a tuatara egg take to hatch?', a: 'about a whole year', w: ['about 3 days', 'about 3 weeks', 'about 10 years'], short: 'a year', shortAccept: ['about a year', 'a whole year', 'about a whole year', '12 months'] },
+    { q: 'What do monarch caterpillars eat in a New Zealand garden?', a: 'swan plants', w: ['harakeke (flax) leaves', 'rotting logs', 'grass seed'], short: 'swan plants', shortAccept: ['swan plant', 'a swan plant'] },
     { q: 'A cicada nymph spends years underground. What does it do when it finally comes up?', a: 'It climbs a tree, splits its old skin and comes out as a winged adult', w: ['It builds a chrysalis on a branch', 'It lays its eggs and dies straight away', 'It turns into a grub'] },
-    { q: 'Which parent kiwi usually sits on the egg?', a: 'the male, for about 80 days', w: ['the female, for about 3 days', 'both take a week each', 'neither — the egg is buried and left'] },
-    { q: 'A huhu grub lives in a rotting log. What will it turn into?', a: 'a huhu beetle, after a pupa stage', w: ['a cicada, after a nymph stage', 'a weta, without changing shape', 'a moth, straight away'] },
+    { q: 'Which parent kiwi usually sits on the egg?', a: 'the male, for about 80 days', w: ['the female, for about 3 days', 'both take a week each', 'neither — the egg is buried and left'], short: 'the male', shortAccept: ['male', 'dad', 'the father', 'the dad'] },
+    { q: 'A huhu grub lives in a rotting log. What will it turn into?', a: 'a huhu beetle, after a pupa stage', w: ['a cicada, after a nymph stage', 'a weta, without changing shape', 'a moth, straight away'], short: 'a huhu beetle', shortAccept: ['huhu beetle', 'a beetle', 'beetle'] },
     { q: 'Why does a newly hatched weta look like a tiny adult weta?', a: 'Weta have incomplete metamorphosis — the nymph is just a small version that grows bigger', w: ['Because weta hatch fully grown', 'Because weta have a pupa stage first', 'Because weta are not insects'] },
     { q: 'A kiwi egg is enormous compared with the bird. What does that mean for the chick?', a: 'It hatches well developed, with a big yolk store, and can feed itself within a week', w: ['It hatches earlier than other birds', 'It has to be fed by both parents for a year', 'It hatches blind and helpless'] },
     { q: 'Monarch butterflies in Aotearoa can go through several life cycles in one summer. Why not in winter?', a: 'It is too cold — the caterpillars grow very slowly and swan plants stop growing', w: ['The butterflies fly to the North Island instead', 'Eggs cannot be laid in the dark', 'The chrysalis stage does not happen in winter'] },
@@ -80,6 +122,7 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const allStages = () => { const out = []; CYCLES.forEach((c) => c.stages.forEach((s) => { if (!out.includes(s.f)) out.push(s.f); })); return out; };
 
@@ -167,9 +210,10 @@
     const c = R.pick(CYCLES);
     const i = R.int(0, c.stages.length - 1);
     const j = (i + 1) % c.stages.length;
+    const target = c.stages[j];
     return {
       prompt: `In the life cycle of <b>${c.name}</b>, what comes straight after the <b>${c.stages[i].f}</b>?`,
-      answer: ch(c.stages[j].f, allStages(), 4),
+      answer: target.short ? textAns(target.short, target.shortAccept, 'one or two words') : ch(target.f, allStages(), 4),
       hint: c.stages.map((s) => s.f).join(' → ') + ' → back to the start',
       working: [`<b>Picture:</b> a wheel that never stops — ${c.note}.`, `${c.stages.map((s) => s.f).join(' → ')} → and round again.`, `After the ${c.stages[i].f} comes the <b>${c.stages[j].f}</b>.`],
       finalAnswer: c.stages[j].f, skill: 'order',
@@ -178,10 +222,11 @@
   function wheelBlank(level) {
     const c = R.pick(CYCLES);
     const i = R.int(0, c.stages.length - 1);
+    const target = c.stages[i];
     return {
       visual: wheelSvg(c, i),
       prompt: `Look at the life cycle of <b>${c.name}</b>. What goes in the space marked <b>?</b>`,
-      answer: ch(c.stages[i].f, allStages(), 4),
+      answer: target.short ? textAns(target.short, target.shortAccept, 'one or two words') : ch(target.f, allStages(), 4),
       hint: `The stage before it is the ${c.stages[(i + c.stages.length - 1) % c.stages.length].s}.`,
       working: [`<b>Picture:</b> read the wheel clockwise, starting at the top.`, `${c.stages.map((s, k) => (k === i ? '<b>?</b>' : s.s)).join(' → ')}`, `The missing stage is the <b>${c.stages[i].f}</b>.`],
       finalAnswer: c.stages[i].f, skill: 'order',
@@ -189,27 +234,24 @@
   }
   function firstStage(level) {
     const c = R.pick(CYCLES);
-    const forms = [
-      { p: `How many stages are there in the life cycle of <b>${c.name}</b>?`, a: String(c.stages.length), w: ['2', '3', '4', '5'], num: true },
-      { p: `Which stage does the life cycle of <b>${c.name}</b> start with?`, a: c.stages[0].f, w: allStages() },
-      { p: `Which is the <b>adult</b> stage in the life cycle of <b>${c.name}</b>?`, a: c.stages[c.stages.length - 1].f, w: allStages() },
-    ];
-    const f = R.pick(forms);
-    if (f.num) {
+    const form = R.pick(['count', 'start', 'adult']);
+    if (form === 'count') {
       return {
-        prompt: f.p,
+        prompt: `How many stages are there in the life cycle of <b>${c.name}</b>?`,
         answer: { type: 'number', value: c.stages.length, unit: 'stages' },
         hint: 'Count the boxes round the wheel.',
         working: [`${c.stages.map((s) => s.s).join(' → ')}`, `That is <b>${c.stages.length}</b> stages.`],
         finalAnswer: `${c.stages.length} stages`, skill: 'order',
       };
     }
+    const target = form === 'start' ? c.stages[0] : c.stages[c.stages.length - 1];
+    const p = form === 'start' ? `Which stage does the life cycle of <b>${c.name}</b> start with?` : `Which is the <b>adult</b> stage in the life cycle of <b>${c.name}</b>?`;
     return {
-      prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      prompt: p,
+      answer: target.short ? textAns(target.short, target.shortAccept, 'one or two words') : ch(target.f, allStages(), 4),
       hint: c.stages.map((s) => s.f).join(' → '),
-      working: [`<b>Picture:</b> the wheel for ${c.name}.`, `${c.stages.map((s) => s.f).join(' → ')}`, `Answer: <b>${f.a}</b>.`],
-      finalAnswer: f.a, skill: 'order',
+      working: [`<b>Picture:</b> the wheel for ${c.name}.`, `${c.stages.map((s) => s.f).join(' → ')}`, `Answer: <b>${target.f}</b>.`],
+      finalAnswer: target.f, skill: 'order',
     };
   }
   function metaQ(level) {
@@ -221,7 +263,7 @@
       return {
         visual: level <= 2 ? metaSvg(c.kind) : undefined,
         prompt: `Does <b>${c.name}</b> go through complete or incomplete metamorphosis?`,
-        answer: ch(k.name, ['complete metamorphosis', 'incomplete metamorphosis'], 2),
+        answer: textAns(c.kind, [k.name, c.kind + ' metamorphosis'], 'one word'),
         hint: 'Is there a pupa stage? If yes it is complete. If the young already looks like a small adult, it is incomplete.',
         working: ['<b>Picture:</b> a pupa is a rebuild; a nymph is just a smaller version.', `${cap(c.name)} goes ${c.stages.map((s) => s.s).join(' → ')}.`, `That is <b>${k.name}</b>.`],
         finalAnswer: k.name, skill: 'metamorphosis',
@@ -250,13 +292,13 @@
   function groupQ(level) {
     const c = R.pick(CYCLES.filter((x) => x.group !== 'plant'));
     const forms = [
-      { p: 'Which animal group has a life cycle like <b>' + c.name + '</b>: egg first, or born alive?', a: c.group === 'mammal' ? 'born alive, then fed on milk' : 'an egg is laid first', w: ['an egg is laid first', 'born alive, then fed on milk'], n: 2 },
-      { p: `Which of these does <b>${c.name}</b> belong to?`, a: c.group, w: ['insect', 'amphibian', 'bird', 'reptile', 'mammal'], n: 4 },
+      { p: 'Which animal group has a life cycle like <b>' + c.name + '</b>: egg first, or born alive?', a: c.group === 'mammal' ? 'born alive, then fed on milk' : 'an egg is laid first', short: c.group === 'mammal' ? 'born alive' : 'egg', shortAccept: c.group === 'mammal' ? ['born alive, then fed on milk', 'born alive and fed on milk'] : ['an egg is laid first', 'egg first', 'lays an egg', 'an egg'] },
+      { p: `Which of these does <b>${c.name}</b> belong to?`, a: c.group, short: c.group, shortAccept: [`an ${c.group}`, `a ${c.group}`] },
     ];
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, f.n),
+      answer: textAns(f.short, f.shortAccept, 'one word'),
       hint: 'Only mammals are born alive and fed on milk. Insects, amphibians, birds and reptiles all lay eggs.',
       working: [`<b>Picture:</b> ${c.note}.`, `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'groups',
@@ -269,14 +311,14 @@
       { p: 'A bird\'s egg has a hard shell. Why?', a: 'It protects the growing chick and stops it drying out on land', w: ['It makes the egg heavier so it does not roll away', 'It keeps the chick cold', 'It lets the chick breathe under water'] },
       { p: 'Why does a parent bird sit on its eggs?', a: 'To keep them warm enough for the chick inside to develop', w: ['To stop them hatching too soon', 'To flatten them into the right shape', 'To feed the chick through the shell'] },
       { p: 'How is a mammal\'s life cycle different from a bird\'s?', a: 'A mammal is born alive and fed on milk; a bird hatches from an egg', w: ['A mammal hatches from an egg and a bird is born alive', 'Mammals have a pupa stage', 'There is no difference at all'] },
-      { p: 'A frog and a butterfly both change shape completely as they grow up. What is that called?', a: 'metamorphosis', w: ['pollination', 'germination', 'fertilisation'] },
+      { p: 'A frog and a butterfly both change shape completely as they grow up. What is that called?', a: 'metamorphosis', w: ['pollination', 'germination', 'fertilisation'], short: 'metamorphosis', shortAccept: [] },
       { p: 'What is <b>germination</b>?', a: 'when a seed starts to grow into a seedling', w: ['when a flower makes pollen', 'when a seed is carried away from the parent', 'when a caterpillar becomes a pupa'] },
       { p: 'What does a seed need before it will germinate?', a: 'water, warmth and air', w: ['light and soil only', 'a flower nearby', 'an insect to open it'] },
     ];
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Go back to the wheel and ask what has to happen at that step.',
       working: ['<b>Picture:</b> every life cycle is a wheel — each stage has to get the next one started.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'cycles',
@@ -286,16 +328,16 @@
     const forms = [
       { p: 'What is <b>sexual reproduction</b>?', a: 'Two parents — a male sex cell joins a female one, so the offspring is not identical to either parent', w: ['One parent makes an identical copy of itself', 'A plant grows a new stem sideways', 'A seed being carried away by the wind'] },
       { p: 'What is <b>asexual reproduction</b>?', a: 'One parent only — the offspring is an identical copy of it', w: ['Two parents, so the offspring is a mix of both', 'A seed germinating in the soil', 'An egg hatching into a chick'] },
-      { p: 'Seeds and eggs are made by which kind of reproduction?', a: 'sexual — two parents, so the offspring is a mix', w: ['asexual — one parent, an identical copy', 'neither, they are made by the roots', 'both at the same time'] },
-      { p: 'Cuttings, runners and bulbs are which kind of reproduction?', a: 'asexual — one parent, and the new plant is an identical copy', w: ['sexual — two parents, so the plants are all different', 'neither, they are just growth', 'sexual, because a flower is involved'] },
+      { p: 'Seeds and eggs are made by which kind of reproduction?', a: 'sexual — two parents, so the offspring is a mix', w: ['asexual — one parent, an identical copy', 'neither, they are made by the roots', 'both at the same time'], short: 'sexual', shortAccept: ['sexual reproduction'] },
+      { p: 'Cuttings, runners and bulbs are which kind of reproduction?', a: 'asexual — one parent, and the new plant is an identical copy', w: ['sexual — two parents, so the plants are all different', 'neither, they are just growth', 'sexual, because a flower is involved'], short: 'asexual', shortAccept: ['asexual reproduction'] },
       { p: 'Why are seedlings grown from seed all slightly different from each other?', a: 'Sexual reproduction mixes the features of two parents, so each seed gets a different mix', w: ['Because seeds are planted at different times', 'Because seedlings are identical copies', 'Because soil changes their DNA'] },
       { p: 'Why is every plant grown from a cutting identical to the parent?', a: 'It is asexual — the new plant is a copy of one parent, with no mixing', w: ['Because cuttings are taken from the flower', 'Because cuttings need two parents', 'They are not identical, they are all different'] },
-      { p: 'A gardener wants ten plants exactly like her best strawberry plant. What should she use?', a: 'runners or cuttings, because they give identical copies', w: ['seeds, because they give identical copies', 'seeds, because they grow faster', 'pollen from another plant'] },
+      { p: 'A gardener wants ten plants exactly like her best strawberry plant. What should she use?', a: 'runners or cuttings, because they give identical copies', w: ['seeds, because they give identical copies', 'seeds, because they grow faster', 'pollen from another plant'], short: 'cuttings', shortAccept: ['runners', 'runners or cuttings', 'cuttings or runners'] },
     ];
     const f = R.pick(level === 1 ? forms.slice(0, 4) : forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a few words') : ch(f.a, f.w, 4),
       hint: 'Two parents and a mix = sexual. One parent and a copy = asexual.',
       working: ['<b>Picture:</b> sexual is shuffling two packs of cards together. Asexual is a photocopy.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'reproduction',
@@ -306,7 +348,7 @@
     if (R.chance(0.5)) {
       return {
         prompt: `Which way of growing new plants is this: <b>${a.ex}</b>?`,
-        answer: ch(a.how, ASEXUAL.map((x) => x.how), 4),
+        answer: textAns(a.how, a.how === 'a cutting' ? ['cutting', 'cuttings'] : [], 'one word'),
         hint: 'All of these are asexual — one parent, an identical copy. Name the method.',
         working: ['<b>Picture:</b> a photocopy of one plant.', `${cap(a.ex)}.`, `That is <b>${a.how}</b>.`],
         finalAnswer: a.how, skill: 'reproduction',
@@ -324,21 +366,25 @@
     const forms = [
       { p: 'What is <b>pollination</b>?', a: 'pollen moving from an anther to a stigma', w: ['the pollen nucleus joining the ovule', 'a seed growing into a seedling', 'a seed being carried away from the parent'] },
       { p: 'What is <b>fertilisation</b> in a plant?', a: 'the pollen nucleus joining an ovule inside the ovary', w: ['pollen moving from an anther to a stigma', 'a seed germinating', 'a flower opening in the sun'] },
-      { p: 'Which happens <b>first</b>: pollination or fertilisation?', a: 'pollination — the pollen has to arrive before anything can join', w: ['fertilisation — the ovule is ready first', 'they happen at exactly the same moment', 'it depends on the plant'] },
-      { p: 'After fertilisation, what does the <b>ovule</b> turn into?', a: 'a seed', w: ['a fruit', 'a petal', 'a new flower'] },
-      { p: 'After fertilisation, what does the <b>ovary</b> turn into?', a: 'the fruit around the seeds', w: ['the seed itself', 'the stigma', 'the roots'] },
-      { p: 'Bees carry pollen from flower to flower. What are they doing for the plant?', a: 'pollinating it, so it can make seeds', w: ['fertilising the ovule directly', 'dispersing the seeds', 'germinating the seeds'] },
+      { p: 'Which happens <b>first</b>: pollination or fertilisation?', a: 'pollination — the pollen has to arrive before anything can join', w: ['fertilisation — the ovule is ready first', 'they happen at exactly the same moment', 'it depends on the plant'], short: 'pollination', shortAccept: ['pollination first'] },
+      { p: 'After fertilisation, what does the <b>ovule</b> turn into?', a: 'a seed', w: ['a fruit', 'a petal', 'a new flower'], short: 'seed', shortAccept: ['a seed', 'the seed'] },
+      { p: 'After fertilisation, what does the <b>ovary</b> turn into?', a: 'the fruit around the seeds', w: ['the seed itself', 'the stigma', 'the roots'], short: 'fruit', shortAccept: ['the fruit', 'a fruit', 'fruit around the seeds'] },
+      { p: 'Bees carry pollen from flower to flower. What are they doing for the plant?', a: 'pollinating it, so it can make seeds', w: ['fertilising the ovule directly', 'dispersing the seeds', 'germinating the seeds'], short: 'pollinating it', shortAccept: ['pollination', 'pollinating', 'they are pollinating it'] },
       { p: 'Why does a plant need pollen from ANOTHER plant of the same kind?', a: 'So the two parents mix, and the seeds are not all identical', w: ['Because its own pollen is poisonous', 'Because pollen only works once', 'It does not — plants never use another plant\'s pollen'] },
     ];
     const f = R.pick(level === 1 ? forms.slice(0, 3) : forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a few words') : ch(f.a, f.w, 4),
       hint: 'Pollination = pollen MOVES. Fertilisation = two cells JOIN. Then ovule → seed and ovary → fruit.',
       working: ['<b>Picture:</b> pollen is the post. Pollination is the delivery; fertilisation is opening the letter.', 'anther → (pollination) → stigma → (fertilisation) → ovule becomes a seed, ovary becomes the fruit.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'pollination',
     };
   }
+  const HUMAN_ACCEPT = {
+    baby: ['a baby'], child: ['a child'], adolescent: ['a teenager', 'a teen', 'an adolescent', 'teenager'],
+    adult: ['an adult'], 'older adult': ['an older adult', 'elderly', 'an elderly person', 'old age'],
+  };
   function humanQ(level) {
     const h = R.pick(HUMAN);
     const form = R.int(1, 3);
@@ -346,7 +392,7 @@
       return {
         visual: growthSvg(h.stage),
         prompt: `Which stage of human growth is <b>${h.when}</b>?`,
-        answer: ch(h.stage, HUMAN.map((x) => x.stage), 4),
+        answer: textAns(h.stage, HUMAN_ACCEPT[h.stage], 'one or two words'),
         hint: 'baby → child → adolescent → adult → older adult',
         working: ['<b>Picture:</b> five figures growing along a line.', `${HUMAN.map((x) => x.stage).join(' → ')}`, `${cap(h.when)} is the <b>${h.stage}</b> stage.`],
         finalAnswer: h.stage, skill: 'human',
@@ -368,7 +414,7 @@
     return {
       visual: growthSvg(h.stage),
       prompt: `Which stage <b>${ask}</b> the <b>${h.stage}</b> stage?`,
-      answer: ch(target.stage, HUMAN.map((x) => x.stage), 4),
+      answer: textAns(target.stage, HUMAN_ACCEPT[target.stage], 'one or two words'),
       hint: 'baby → child → adolescent → adult → older adult',
       working: [`${HUMAN.map((x) => x.stage).join(' → ')}`, `So it is the <b>${target.stage}</b> stage.`],
       finalAnswer: target.stage, skill: 'human',
@@ -378,7 +424,7 @@
     const f = R.pick(NZFACTS);
     return {
       prompt: f.q,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a few words') : ch(f.a, f.w, 4),
       hint: 'Picture the animal in a New Zealand garden or bush and think about its wheel.',
       working: ['<b>Picture:</b> the life cycle wheel for that animal.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'nz',

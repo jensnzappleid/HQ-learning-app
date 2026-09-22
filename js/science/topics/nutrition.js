@@ -120,19 +120,19 @@
     { p: 'Simple sugars almost all end in the same three letters. Which?', a: '‑ose — glucose, fructose, sucrose, lactose', w: ['‑ase — glucase, fructase', '‑ine — glucine, sucrine', '‑ate — glucate, sucrate'] },
     { p: 'What is the difference between a <b>sugar</b> and a <b>starch</b>?', a: 'Sugar is a simple carbohydrate for instant energy; starch is complex, so it takes time to break down and fills you up', w: ['Starch gives instant energy and sugar is slow', 'Sugar has energy and starch has none', 'They are two words for exactly the same thing'] },
     { p: 'Harper needs energy that will last all morning, not a five-minute burst. Which carbohydrate should she eat?', a: 'a starchy one — porridge, wholegrain bread or pasta', w: ['a sugary one — lollies or fizzy drink', 'neither — she should eat only protein', 'it makes no difference which she eats'] },
-    { p: 'What is another word for <b>fats and oils</b>?', a: 'lipids', w: ['proteins', 'carbohydrates', 'minerals'] },
+    { p: 'What is another word for <b>fats and oils</b>?', a: 'lipids', w: ['proteins', 'carbohydrates', 'minerals'], short: 'lipids', shortAccept: ['lipid'] },
     { p: 'What is the difference between a <b>fat</b> and an <b>oil</b>?', a: 'A fat is solid at room temperature and mostly comes from animals; an oil is liquid and mostly comes from plants', w: ['An oil is solid and a fat is liquid', 'A fat has energy and an oil does not', 'Only the colour is different'] },
-    { p: 'Apart from storing energy, what else are lipids needed for in every single cell?', a: 'making the outside of the cell — the cell membrane', w: ['making the nucleus', 'carrying oxygen round the blood', 'making bones hard'] },
+    { p: 'Apart from storing energy, what else are lipids needed for in every single cell?', a: 'making the outside of the cell — the cell membrane', w: ['making the nucleus', 'carrying oxygen round the blood', 'making bones hard'], short: 'cell membrane', shortAccept: ['the cell membrane', 'membrane'] },
     { p: 'Where do <b>vitamins</b> come from, and where do <b>minerals</b> come from?', a: 'Vitamins are made by living things; minerals come out of the ground', w: ['Minerals are made by living things; vitamins come out of the ground', 'Both are made by living things', 'Both are dug out of the ground'] },
     { p: 'Name the main vitamins you are expected to know.', a: 'vitamin A, the B group, vitamin C and vitamin D', w: ['vitamins A, E, I, O and U', 'vitamins 1, 2 and 3', 'vitamins X, Y and Z'] },
     { p: 'Which mineral comes from dairy food, and what is it for?', a: 'calcium — it keeps bones and teeth strong', w: ['iron — it keeps bones and teeth strong', 'calcium — it carries oxygen in the blood', 'sodium — it builds muscle'] },
     { p: 'Which mineral comes from red meat and green vegetables, and what is it for?', a: 'iron — it is needed to make red blood cells', w: ['calcium — it is needed to make red blood cells', 'iron — it builds bones and teeth', 'iodine — it gives you energy'] },
     { p: 'What exactly <b>is</b> fibre?', a: 'plant material that you eat but cannot digest at all', w: ['a kind of protein found in meat', 'a vitamin made by your gut', 'a mineral dug out of the ground'] },
-    { p: 'Too little fibre causes constipation. What does <b>too much</b> fibre cause?', a: 'diarrhoea — the food is pushed through far too fast', w: ['constipation as well', 'nothing at all — you cannot have too much', 'scurvy'] },
-    { p: 'How long can a person survive with no water at all?', a: 'only about 3 days', w: ['about 3 weeks', 'about 3 months', 'about 3 hours'] },
+    { p: 'Too little fibre causes constipation. What does <b>too much</b> fibre cause?', a: 'diarrhoea — the food is pushed through far too fast', w: ['constipation as well', 'nothing at all — you cannot have too much', 'scurvy'], short: 'diarrhoea', shortAccept: ['diarrhea'] },
+    { p: 'How long can a person survive with no water at all?', a: 'only about 3 days', w: ['about 3 weeks', 'about 3 months', 'about 3 hours'], short: 'about 3 days', shortAccept: ['3 days', 'three days', 'about three days'] },
     { p: 'Why does your body need water so badly?', a: 'It dissolves things and transports them all round the body', w: ['It is the body’s main source of energy', 'It is used to build muscle', 'It kills the microbes in your food'] },
-    { p: 'How many portions of fruit and vegetables should you aim for each day?', a: 'at least 5', w: ['at least 1', 'at least 12', 'exactly 3, no more'] },
-    { p: 'Fruit and vegetables are the best source of which two things?', a: 'fibre and vitamins', w: ['protein and fat', 'calcium and iron', 'starch and sugar'] },
+    { p: 'How many portions of fruit and vegetables should you aim for each day?', a: 'at least 5', w: ['at least 1', 'at least 12', 'exactly 3, no more'], short: 'at least 5', shortAccept: ['5', 'five', 'at least five'] },
+    { p: 'Fruit and vegetables are the best source of which two things?', a: 'fibre and vitamins', w: ['protein and fat', 'calcium and iron', 'starch and sugar'], short: 'fibre and vitamins', shortAccept: ['vitamins and fibre', 'fiber and vitamins', 'vitamins and fiber'] },
     { p: 'Why should you go easy on ice-cream and cheese even though dairy gives you calcium?', a: 'They are also high in fat, so too much brings in a lot of extra energy', w: ['Dairy has no calcium in it once it is frozen', 'They stop your body absorbing protein', 'They contain no nutrients at all'] },
     { p: 'Which nutrient would a person who eats no meat need to plan carefully, and where could they get it?', a: 'protein — from tofu and soya beans, nuts, eggs, milk, beans and spinach', w: ['carbohydrate — from meat only', 'fibre — from meat only', 'vitamin C — from red meat'] },
   ];
@@ -146,6 +146,18 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for a "which nutrient is X especially good for?" answer. */
+  const SOURCE_ANSWER = {
+    carbohydrate: { value: 'carbohydrate', accept: ['carbs'] },
+    protein: { value: 'protein', accept: [] },
+    fat: { value: 'fat', accept: [] },
+    fibre: { value: 'fibre', accept: ['fiber'] },
+    'minerals (calcium)': { value: 'calcium', accept: ['minerals (calcium)', 'mineral (calcium)', 'calcium (mineral)'] },
+    'minerals (iron)': { value: 'iron', accept: ['minerals (iron)', 'mineral (iron)'] },
+    'vitamins (vitamin C)': { value: 'vitamin c', accept: ['vitamins (vitamin c)', 'vitamin c (vitamins)', 'vitamins'] },
+    'vitamins (vitamin A)': { value: 'vitamin a', accept: ['vitamins (vitamin a)', 'vitamin a (vitamins)', 'vitamins'] },
+  };
 
   /* ---------- diagrams ---------- */
   /** the balanced plate, split into food groups. highlight = a wedge key */
@@ -245,7 +257,7 @@
     if (form === 2) {
       return {
         prompt: `Which nutrient is for <b>${n.short}</b>?`,
-        answer: ch(n.name, NUTRIENTS.map((x) => x.name), 4),
+        answer: textAns(n.name, [], 'one word'),
         hint: `In the car picture, that is ${n.pic}.`,
         working: [`<b>Picture:</b> ${n.pic}.`, `That is <b>${n.name}</b>.`],
         finalAnswer: n.name, skill: 'nutrients',
@@ -261,9 +273,10 @@
   }
   function sourceQ(level) {
     const s = R.pick(SOURCES);
+    const sa = SOURCE_ANSWER[s.best];
     return {
       prompt: `Which nutrient is <b>${s.food}</b> especially good for?`,
-      answer: ch(s.best, SOURCE_OPTS, 4),
+      answer: textAns(sa.value, sa.accept, 'one or two words'),
       hint: 'Starchy = carbohydrate. Meat, eggs, beans = protein. Milk and cheese = calcium. Fresh fruit and veg = vitamins and fibre.',
       working: ['<b>Picture:</b> put the food on the balanced plate and see which quarter it belongs in.', `${cap(s.food)} is a good source of <b>${s.best}</b>.`],
       finalAnswer: s.best, skill: 'sources',
@@ -271,17 +284,21 @@
   }
   function plateQ(level) {
     const forms = [
-      { p: 'On a balanced plate, which group should take up about <b>half</b> the plate?', a: 'fruit and vegetables', w: ['breads and cereals', 'meat and fish', 'milk and cheese'], k: 'veg' },
-      { p: 'Which group gives you most of your <b>energy</b> on a balanced plate?', a: 'breads and cereals (carbohydrate)', w: ['fruit and vegetables', 'meat, fish and eggs', 'milk and cheese'], k: 'carb' },
-      { p: 'Which group on the plate is mostly there for <b>growth and repair</b>?', a: 'meat, fish, eggs and beans (protein)', w: ['breads and cereals', 'fruit and vegetables', 'oils and spreads'], k: 'protein' },
-      { p: 'Which group is the main source of <b>calcium</b> for your bones and teeth?', a: 'milk and cheese', w: ['fruit and vegetables', 'breads and cereals', 'meat and fish'], k: 'dairy' },
+      { p: 'On a balanced plate, which group should take up about <b>half</b> the plate?', a: 'fruit and vegetables', w: ['breads and cereals', 'meat and fish', 'milk and cheese'], k: 'veg',
+        short: 'fruit and vegetables', shortAccept: ['fruit and veges', 'fruit & vegetables', 'fruit and vegies'] },
+      { p: 'Which group gives you most of your <b>energy</b> on a balanced plate?', a: 'breads and cereals (carbohydrate)', w: ['fruit and vegetables', 'meat, fish and eggs', 'milk and cheese'], k: 'carb',
+        short: 'breads and cereals', shortAccept: ['bread and cereals', 'carbohydrate', 'carbs'] },
+      { p: 'Which group on the plate is mostly there for <b>growth and repair</b>?', a: 'meat, fish, eggs and beans (protein)', w: ['breads and cereals', 'fruit and vegetables', 'oils and spreads'], k: 'protein',
+        short: 'meat, fish, eggs and beans', shortAccept: ['protein', 'meat and fish'] },
+      { p: 'Which group is the main source of <b>calcium</b> for your bones and teeth?', a: 'milk and cheese', w: ['fruit and vegetables', 'breads and cereals', 'meat and fish'], k: 'dairy',
+        short: 'milk and cheese', shortAccept: ['dairy'] },
       { p: 'What does a <b>balanced diet</b> actually mean?', a: 'Eating the right amount of every nutrient group — nothing missing and nothing overloaded', w: ['Eating exactly the same weight of every food', 'Only eating vegetables', 'Eating three meals at exactly the same time every day'], k: undefined },
     ];
     const f = R.pick(forms);
     return {
       visual: plateSvg(f.k),
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a few words') : ch(f.a, f.w, 4),
       hint: 'Half the plate fruit and veges, a quarter carbohydrate, a quarter protein, plus a little dairy.',
       working: ['<b>Picture:</b> the plate split into wedges.', 'Half fruit and veges · a quarter breads and cereals · a quarter meat, fish, eggs and beans · a little milk and cheese.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'balanced',
@@ -300,9 +317,10 @@
       };
     }
     if (form === 2) {
+      const accept = d.missing === 'vitamin D or calcium' ? ['vitamin d', 'calcium', 'vitamin d and calcium', 'calcium or vitamin d'] : [];
       return {
         prompt: `Someone has <b>${d.result.split(' — ')[0].split(',')[0]}</b>. Which nutrient are they most likely short of?`,
-        answer: ch(d.missing, DEFICIENCY.map((x) => x.missing), 4),
+        answer: textAns(d.missing, accept, 'one or two words'),
         hint: 'Work backwards from the symptom to the job that nutrient does.',
         working: ['<b>Picture:</b> which part of the car stopped working?', `That is what happens with too little <b>${d.missing}</b>.`],
         finalAnswer: d.missing, skill: 'deficiency',
@@ -433,19 +451,24 @@
   }
   function digestLink(level) {
     const forms = [
-      { p: 'Carbohydrate is digested into small molecules. What are they?', a: 'glucose (a simple sugar)', w: ['amino acids', 'fatty acids and glycerol', 'vitamins'] },
-      { p: 'Protein is digested into small molecules. What are they?', a: 'amino acids', w: ['glucose', 'fatty acids and glycerol', 'minerals'] },
-      { p: 'Fat is digested into small molecules. What are they?', a: 'fatty acids and glycerol', w: ['glucose', 'amino acids', 'starch'] },
+      { p: 'Carbohydrate is digested into small molecules. What are they?', a: 'glucose (a simple sugar)', w: ['amino acids', 'fatty acids and glycerol', 'vitamins'],
+        short: 'glucose', shortAccept: ['glucose (a simple sugar)', 'a simple sugar', 'sugar'] },
+      { p: 'Protein is digested into small molecules. What are they?', a: 'amino acids', w: ['glucose', 'fatty acids and glycerol', 'minerals'],
+        short: 'amino acids', shortAccept: ['amino acid'] },
+      { p: 'Fat is digested into small molecules. What are they?', a: 'fatty acids and glycerol', w: ['glucose', 'amino acids', 'starch'],
+        short: 'fatty acids and glycerol', shortAccept: ['fatty acid and glycerol', 'glycerol and fatty acids'] },
       { p: 'Why does food have to be digested at all?', a: 'The molecules must be small enough to pass through the gut wall into the blood', w: ['So it tastes better', 'So it weighs less', 'So the body can store it in the stomach'] },
-      { p: 'Where is most of the digested food absorbed into the blood?', a: 'the small intestine', w: ['the stomach', 'the mouth', 'the large intestine'] },
-      { p: 'Which nutrient is <b>not</b> digested at all, and passes right through you?', a: 'fibre', w: ['protein', 'carbohydrate', 'fat'] },
+      { p: 'Where is most of the digested food absorbed into the blood?', a: 'the small intestine', w: ['the stomach', 'the mouth', 'the large intestine'],
+        short: 'small intestine', shortAccept: ['the small intestine'] },
+      { p: 'Which nutrient is <b>not</b> digested at all, and passes right through you?', a: 'fibre', w: ['protein', 'carbohydrate', 'fat'],
+        short: 'fibre', shortAccept: ['fiber'] },
       { p: 'What happens to the glucose from your food once it reaches a cell?', a: 'It is used in respiration: glucose + oxygen → energy + carbon dioxide + water', w: ['It is turned back into food', 'It is breathed straight out again', 'It is stored in the nucleus'] },
       { p: 'Which nutrients do <b>not</b> need digesting because their molecules are already small enough?', a: 'vitamins, minerals and water', w: ['protein and fat', 'carbohydrate and protein', 'fibre and fat'] },
     ];
     const f = R.pick(level === 1 ? forms.slice(3, 6) : forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a word or two') : ch(f.a, f.w, 4),
       hint: 'Big food molecules → small ones → through the gut wall → into the blood → to every cell.',
       working: ['<b>Picture:</b> a big beanbag will not fit through a letterbox — you have to empty the beans out first.', 'carbohydrate → glucose · protein → amino acids · fat → fatty acids and glycerol.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'digestion',
@@ -533,10 +556,16 @@
   function foodTestQ(level) {
     const t = R.pick(FOOD_TESTS);
     const forms = [];
+    const CHEM_ACCEPT = {
+      'iodine solution': ['iodine', 'iodine solution'],
+      "Benedict's solution": ["benedict's", 'benedicts', "benedict's solution", 'benedicts solution'],
+      'Biuret solution': ['biuret', 'biuret solution'],
+      'the ethanol emulsion test': ['ethanol', 'the ethanol test', 'ethanol emulsion test', 'ethanol test'],
+    };
     forms.push(() => ({
       visual: testTubeSvg(t),
       prompt: `Which chemical do you use to test a food for <b>${t.nutrient}</b>?`,
-      answer: ch(t.chem, FOOD_TESTS.map((x) => x.chem), 4),
+      answer: textAns(CHEM_ACCEPT[t.chem][0], CHEM_ACCEPT[t.chem].slice(1), 'one word'),
       hint: `Starch → iodine. Sugar → Benedict's. Protein → Biuret. Fat → ethanol.`,
       working: [`<b>Picture:</b> ${t.pic}.`, `To test for ${t.nutrient} you use <b>${t.chem}</b>.`],
       finalAnswer: t.chem, skill: 'foodtest',
@@ -603,7 +632,7 @@
     const f = R.pick(SCHOOL);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a word or two') : ch(f.a, f.w, 4),
       hint: 'This one is straight off the food groups sheet — learn it as a fact.',
       working: [`Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'groups',

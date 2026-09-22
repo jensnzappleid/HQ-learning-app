@@ -65,6 +65,14 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each separating-method name */
+  const METHOD_ACCEPT = {
+    filtration: [], evaporation: [], distillation: [], chromatography: [],
+    'using a magnet': ['a magnet', 'magnet', 'magnetism', 'use a magnet'],
+    sieving: ['a sieve', 'sieve'],
+    decanting: ['decant', 'decantation'],
+  };
 
   /* ---------- diagrams ---------- */
   const dotGrid = (pts, fill, stroke, r) => pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${r || 5.5}" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>`).join('');
@@ -151,10 +159,9 @@
   /* ---------- question makers ---------- */
   function whichMethod(level) {
     const j = R.pick(JOBS);
-    const opt = choice(j.method, METHOD_NAMES.filter((m) => m !== j.method));
     return {
       prompt: `Which method would you use to separate <b>${j.job}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(j.method, METHOD_ACCEPT[j.method], 'one or two words'),
       hint: 'Ask: has it dissolved? Is it magnetic? Do I want the solid or the liquid back?',
       working: [
         '<b>Picture:</b> a colander, a magnet, a kettle and a strip of paper — pick the right tool.',
@@ -199,10 +206,9 @@
         finalAnswer: v.def, skill: 'vocab',
       };
     }
-    const opt = choice(v.word, VOCAB.filter((x) => x.word !== v.word).map((x) => x.word));
     return {
       prompt: `What is the word for <b>${v.def}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(v.word, [], 'one word'),
       hint: 'Salt + water: salt = solute, water = solvent, salt water = solution.',
       working: ['<b>Picture:</b> stirring salt into a glass of water.', `That is the <b>${v.word}</b>.`],
       finalAnswer: v.word, skill: 'vocab',
@@ -227,10 +233,11 @@
   function pureOrMixture(level) {
     const isPure = R.chance(0.4);
     const item = isPure ? R.pick(PURE) : R.pick(MIXTURES);
-    const opt = choice(isPure ? 'a pure substance' : 'a mixture', [isPure ? 'a mixture' : 'a pure substance'], 2);
     return {
       prompt: `Is <b>${item}</b> a pure substance or a mixture?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: isPure
+        ? textAns('pure', ['a pure substance', 'pure substance'], 'one word')
+        : textAns('mixture', ['a mixture'], 'one word'),
       hint: 'Pure = only ONE substance in there. Mixture = two or more, just jumbled together.',
       working: [
         '<b>Picture:</b> a box of only purple balls (pure) vs a box of purple AND orange balls (mixture).',
@@ -243,15 +250,12 @@
   function filterDiagram(level) {
     const askResidue = R.chance(0.5);
     const correct = askResidue ? 'the residue — the solid trapped in the filter paper' : 'the filtrate — the liquid that runs through';
-    const opt = choice(correct, [
-      askResidue ? 'the filtrate — the liquid that runs through' : 'the residue — the solid trapped in the filter paper',
-      'the solvent, which stays in the funnel',
-      'the saturated solution',
-    ], 4);
     return {
       visual: filtrationSvg(),
       prompt: `Harper filters muddy water. What is the name for <b>${askResidue ? 'the mud left in the filter paper' : 'the clear liquid collected in the beaker'}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: askResidue
+        ? textAns('residue', ['the residue'], 'one word')
+        : textAns('filtrate', ['the filtrate'], 'one word'),
       hint: 'Residue stays behind (like the "rest" of it). Filtrate goes through the filter.',
       working: ['<b>Picture:</b> a strainer over a bowl of pasta.', '1. The solid trapped on top = the <b>residue</b>.', '2. The liquid that drips through = the <b>filtrate</b>.', `So the answer is <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'filtration',
@@ -310,11 +314,10 @@
         finalAnswer: 'Distillation catches the water; evaporation lets it escape', skill: 'distillation',
       };
     }
-    const opt = choice('pure water', ['salt', 'salt water', 'a saturated solution'], 4);
     return {
       visual: distillationSvg(),
       prompt: 'Salt water is distilled using this apparatus. What collects in the beaker on the right?',
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns('pure water', ['water', 'the pure water'], 'two words'),
       hint: 'Only one of the two substances can turn into a gas and travel down the tube.',
       working: ['<b>Picture:</b> a kettle with a lid held over it — the drips that fall off are pure water.', '1. Which part boils off? The <b>water</b> (salt needs 1400 °C).', '2. It travels down the tube and cools back to a liquid.', '3. The salt is left behind in the flask.', 'So <b>pure water</b> collects.'],
       finalAnswer: 'pure water', skill: 'distillation',

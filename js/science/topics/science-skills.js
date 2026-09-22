@@ -65,6 +65,28 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const fmt = (x) => (Math.round(x * 100) / 100).toString();
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for tool names, units and hazard-symbol names. */
+  const TOOL_ACCEPT = {
+    'a ruler': ['ruler'],
+    'a measuring cylinder': ['measuring cylinder', 'cylinder'],
+    'a balance (scales)': ['balance', 'scales', 'a balance', 'a scale'],
+    'a stopwatch': ['stopwatch'],
+    'a thermometer': ['thermometer'],
+  };
+  const UNIT_ACCEPT = {
+    cm: ['centimetres', 'centimeters'],
+    mL: ['ml', 'millilitres', 'milliliters'],
+    g: ['grams', 'gram'],
+    seconds: ['s', 'sec', 'secs'],
+    '°C': ['c', 'celsius', 'degrees c', 'degrees celsius'],
+  };
+  const HAZARD_ACCEPT = {
+    flammable: [],
+    corrosive: [],
+    toxic: ['poisonous'],
+    'harmful or irritant': ['harmful', 'irritant'],
+  };
 
   /* ---------- diagrams ---------- */
   function conceptSvg() {
@@ -251,19 +273,17 @@
   function toolJobQ(level) {
     const j = R.pick(MEASURE_JOBS);
     if (R.chance(0.5)) {
-      const c = choice(j.tool, TOOLS.map((t) => t.n), 4);
       return {
         prompt: `Harper needs to measure <b>${j.job}</b>. Which instrument should she use?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(j.tool, TOOL_ACCEPT[j.tool], 'a few words'),
         hint: `The answer will be written in ${j.unit}.`,
         working: ['<b>Picture:</b> the right tool for the job, like picking a spanner not a hammer.', `1. What kind of measurement is it? It ends up in ${j.unit}.`, `So she needs <b>${j.tool}</b>.`],
         finalAnswer: j.tool, skill: 'tools',
       };
     }
-    const c = choice(j.unit, ['cm', 'mm', 'mL', 'g', 'seconds', '°C'], 4);
     return {
       prompt: `Harper measures <b>${j.job}</b> with ${j.tool}. What unit should she write in her table?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(j.unit, UNIT_ACCEPT[j.unit], 'a unit'),
       hint: 'The unit goes in the column heading, once — not next to every number.',
       working: ['<b>Picture:</b> the heading row of a results table.', `${j.tool.charAt(0).toUpperCase() + j.tool.slice(1)} measures in <b>${j.unit}</b>.`],
       finalAnswer: j.unit, skill: 'units',
@@ -382,10 +402,9 @@
 
   function graphChoiceQ(level) {
     const g = R.pick(GRAPH_CHOICE);
-    const c = choice(g.a, ['bar chart', 'line graph', 'pie chart'], 3);
     return {
       prompt: `Harper has recorded <b>${g.d}</b>. Should she draw a bar chart or a line graph?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(g.a, g.a === 'bar chart' ? ['a bar chart', 'bar graph'] : ['a line graph', 'line'], 'two words'),
       hint: 'Numbers on the bottom axis → line graph. Separate categories on the bottom → bar chart.',
       working: ['<b>Picture:</b> ask "is the thing along the bottom a NUMBER or a NAME?"', `1. ${g.why.charAt(0).toUpperCase() + g.why.slice(1)}.`, `So she should draw a <b>${g.a}</b>.`],
       finalAnswer: g.a, skill: 'graphs',
@@ -493,11 +512,10 @@
         finalAnswer: h.m, skill: 'hazards',
       };
     }
-    const c = choice(h.n, HAZARDS.map((x) => x.n), 4);
     return {
       visual: hazardSvg(h.n.split(' ')[0]),
       prompt: `A bottle carries this hazard symbol (${h.pic}). What is it called?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(h.n, HAZARD_ACCEPT[h.n], 'one word'),
       hint: h.m,
       working: [`<b>Picture:</b> ${h.pic} in a red-edged diamond.`, `That symbol means <b>${h.n}</b> — ${h.m}.`],
       finalAnswer: h.n, skill: 'hazards',

@@ -10,7 +10,14 @@
     { name: 'condensing', from: 'gas', to: 'liquid', energy: 'loses', particles: 'the particles lose energy, slow down and clump back together into a liquid' },
     { name: 'subliming', from: 'solid', to: 'gas', energy: 'gains', particles: 'the particles gain so much energy they escape straight from the solid into the air, with no liquid stage' },
   ];
-  const CHANGE_NAMES = CHANGES.map((c) => c.name);
+  /** typed synonyms accepted for each change-of-state name. */
+  const CHANGE_ACCEPT = {
+    melting: ['melt'],
+    freezing: ['freeze'],
+    evaporating: ['evaporation', 'evaporate'],
+    condensing: ['condensation', 'condense'],
+    subliming: ['sublimation', 'sublime'],
+  };
 
   const EVENTS = [
     { text: 'an ice cube in a glass of juice slowly turns into water', change: 'melting' },
@@ -65,6 +72,7 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   const JIT = [[2, -2], [-2, 2], [3, 1], [-2, -3], [1, 2], [-3, -1], [2, -2], [0, 3]];
@@ -118,10 +126,9 @@
   /* ---------- question makers ---------- */
   function nameChange(level) {
     const c = R.pick(CHANGES);
-    const opt = choice(c.name, CHANGE_NAMES.filter((n) => n !== c.name));
     return {
       prompt: `What is the name of the change from a <b>${c.from}</b> to a <b>${c.to}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(c.name, CHANGE_ACCEPT[c.name], 'one word'),
       hint: c.energy === 'gains' ? 'The particles are gaining energy (heating up).' : 'The particles are losing energy (cooling down).',
       working: ['<b>Picture:</b> an ice cube on a hot day — block → puddle → invisible vapour.', `1. ${c.from} → ${c.to}: are the particles gaining or losing energy? They are <b>${c.energy === 'gains' ? 'gaining' : 'losing'}</b> it.`, `That change is called <b>${c.name}</b>.`],
       finalAnswer: c.name, skill: 'names',
@@ -131,10 +138,9 @@
     const c = R.pick(CHANGES);
     const askFrom = R.chance(0.5);
     const correct = askFrom ? c.from : c.to;
-    const opt = choice(correct, ['solid', 'liquid', 'gas'].filter((s) => s !== correct), 3);
     return {
       prompt: `When something is <b>${c.name}</b>, what state does it ${askFrom ? 'start as' : 'end up as'}?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(correct, [], 'one word'),
       hint: `${c.name.charAt(0).toUpperCase() + c.name.slice(1)} goes ${c.from} → ${c.to}.`,
       working: [`1. ${c.name.charAt(0).toUpperCase() + c.name.slice(1)} goes <b>${c.from} → ${c.to}</b>.`, `So it ${askFrom ? 'starts as' : 'ends up as'} a <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'names',
@@ -143,10 +149,9 @@
   function eventChange(level) {
     const e = R.pick(level === 1 ? EVENTS.filter((x) => x.change !== 'subliming') : EVENTS);
     const c = CHANGES.find((x) => x.name === e.change);
-    const opt = choice(e.change, CHANGE_NAMES.filter((n) => n !== e.change));
     return {
       prompt: `Which change of state is happening when <b>${e.text}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(e.change, CHANGE_ACCEPT[e.change], 'one word'),
       hint: 'Work out what state it started as and what state it ended as.',
       working: ['<b>Picture:</b> ice cube → puddle → invisible vapour.', `1. What state did it start as? A <b>${c.from}</b>.`, `2. What state did it end as? A <b>${c.to}</b>.`, `${c.from} → ${c.to} is <b>${c.change || c.name}</b>.`],
       finalAnswer: e.change, skill: 'everyday',
@@ -217,12 +222,11 @@
     else t = Math.round(s.mp + (s.bp - s.mp) * R.pick([0.25, 0.5, 0.75]));
     if (t <= s.mp) t = s.mp + 1;
     const real = stateAt(s, t);
-    const opt = choice(real, ['solid', 'liquid', 'gas'].filter((x) => x !== real), 3);
     const rows = R.shuffle([s].concat(R.sample(SUBS.filter((x) => x.name !== s.name), 3)));
     return {
       visual: subTable(rows),
       prompt: `Use the table. What state is <b>${s.name}</b> in at <b>${t} °C</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(real, [], 'one word'),
       hint: 'Below the melting point = solid. Between the two = liquid. Above the boiling point = gas.',
       working: [
         '<b>Picture:</b> a temperature ladder with two rungs on it — the melting point and the boiling point.',

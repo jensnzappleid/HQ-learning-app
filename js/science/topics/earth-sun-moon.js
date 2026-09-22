@@ -46,6 +46,8 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
 
   /* ---------- diagrams ---------- */
   /* Moon drawn as seen from Aotearoa: a WAXING moon is lit on the LEFT.
@@ -201,22 +203,24 @@
     const items = [
       { q: 'What causes day and night?', a: 'The Earth spins on its axis', wrongs: ['The Sun goes round the Earth', 'The Earth orbits the Sun', 'Clouds cover the Sun at night'],
         w: ['<b>Picture:</b> standing on a spinning roundabout with one torch beside it.', '1. Does the torch move? No.', '2. You spin, so you face it, then away from it.', 'The <b>Earth spins</b> — the half facing the Sun has day, the other half has night.'] },
-      { q: 'How long does one full spin of the Earth take?', a: '24 hours', wrongs: ['12 hours', '365 days', '29½ days'], w: ['One spin = one day = <b>24 hours</b>.'] },
+      { q: 'How long does one full spin of the Earth take?', a: '24 hours', wrongs: ['12 hours', '365 days', '29½ days'], w: ['One spin = one day = <b>24 hours</b>.'],
+        short: '24 hours', shortAccept: ['24', 'one day', 'a day', '24hrs'] },
       { q: 'The Sun appears to move across the sky during the day. What is really moving?', a: 'The Earth, spinning', wrongs: ['The Sun, orbiting Earth', 'The Moon, pushing the Sun', 'Nothing — it is an optical illusion in the clouds'],
         w: ['<b>Picture:</b> spinning on a chair — the room seems to slide past you.', '1. Is the Sun moving round us? No.', 'It is <b>Earth spinning</b> that makes the Sun seem to travel across the sky.'] },
       { q: 'Which way does the Sun appear to rise?', a: 'In the east', wrongs: ['In the west', 'In the north', 'It rises in a different place every day'],
-        w: ['Earth spins from west to east.', 'So the Sun seems to come up in the <b>east</b> and set in the west.'] },
+        w: ['Earth spins from west to east.', 'So the Sun seems to come up in the <b>east</b> and set in the west.'],
+        short: 'east', shortAccept: ['in the east', 'the east'] },
       { q: 'It is the middle of the night in Auckland. What is happening on the opposite side of the Earth?', a: 'It is the middle of the day', wrongs: ['It is also night', 'It is sunrise', 'It is winter there'],
         w: ['<b>Picture:</b> half of a ball lit by a torch, half in shadow.', '1. Auckland is on the dark half.', 'The opposite side is on the lit half, so it is <b>the middle of the day</b>.'] },
       { q: 'Which causes DAY AND NIGHT — the spin or the orbit?', a: 'The spin (once every 24 hours)', wrongs: ['The orbit (once every year)', 'The Moon&rsquo;s orbit', 'The tilt of the axis'],
-        w: ['<b>Spin</b> = day and night. <b>Orbit</b> = the year. <b>Tilt</b> = the seasons.', 'Day and night come from the <b>spin</b>.'] },
+        w: ['<b>Spin</b> = day and night. <b>Orbit</b> = the year. <b>Tilt</b> = the seasons.', 'Day and night come from the <b>spin</b>.'],
+        short: 'spin', shortAccept: ['the spin', 'spinning', 'it spins'] },
     ];
     const it = R.pick(items);
-    const c = choice(it.a, it.wrongs, 4);
     return {
       visual: R.chance(0.5) ? dayNightSvg() : undefined,
       prompt: it.q,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: it.short ? textAns(it.short, it.shortAccept, 'a word or two') : ans(choice(it.a, it.wrongs, 4)),
       hint: 'Spin = day. Orbit = year. Tilt = seasons.',
       working: it.w, finalAnswer: it.a, skill: 'day-night',
     };
@@ -232,14 +236,14 @@
         w: ['<b>Picture:</b> a tilted ball going round a torch.', '1. In December, which half leans towards the Sun? The <b>southern</b> half.', '2. NZ is in the southern half → summer. Britain is in the north → winter.'] },
       { q: 'If the Earth had NO tilt at all, what would happen?', a: 'There would be almost no seasons', wrongs: ['There would be no day or night', 'It would always be winter', 'The year would get longer'],
         w: ['<b>Picture:</b> a ball standing straight up going round a torch.', '1. Would either half ever lean towards the Sun? No.', 'So every place would get roughly the same light all year — <b>no real seasons</b>.'] },
-      { q: 'Which is longer — a day or a year?', a: 'A year (one orbit ≈ 365 spins)', wrongs: ['A day', 'They are the same', 'It depends on the season'], w: ['One spin = a day. One orbit = a year.', 'Earth spins about <b>365 times</b> during one orbit.'] },
+      { q: 'Which is longer — a day or a year?', a: 'A year (one orbit ≈ 365 spins)', wrongs: ['A day', 'They are the same', 'It depends on the season'], w: ['One spin = a day. One orbit = a year.', 'Earth spins about <b>365 times</b> during one orbit.'],
+        short: 'a year', shortAccept: ['year', 'the year'] },
     ];
     const it = R.pick(items);
-    const c = choice(it.a, it.wrongs, 4);
     return {
       visual: /seasons|December|tilt/.test(it.q) ? tiltSvg() : undefined,
       prompt: it.q,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: it.short ? textAns(it.short, it.shortAccept, 'a day or a year') : ans(choice(it.a, it.wrongs, 4)),
       hint: 'The tilt is what makes seasons — not how close we are to the Sun.',
       working: it.w, finalAnswer: it.a, skill: 'seasons',
     };
@@ -248,15 +252,14 @@
   function seasonMonthQ(level) {
     const m = R.pick(NZ_SEASON);
     const here = level === 1 ? true : R.chance(0.5);
-    const ans = here ? m.nz : m.north;
-    const c = choice(ans, ['summer', 'autumn', 'winter', 'spring'], 4);
+    const season = here ? m.nz : m.north;
     return {
       visual: R.chance(0.4) ? tiltSvg() : undefined,
       prompt: `It is <b>${m.month}</b>. What season is it ${here ? 'in Aotearoa New Zealand' : 'in Britain (northern hemisphere)'}?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(season, [], 'one word'),
       hint: 'NZ seasons are the opposite of the northern hemisphere ones. December–February = NZ summer.',
       working: ['<b>Picture:</b> a tilted ball going round a torch — one half leans in, the other leans away.', `1. In ${m.month} it is <b>${m.nz}</b> in New Zealand.`, here ? `So the answer is <b>${m.nz}</b>.` : `The northern hemisphere gets the opposite season, so it is <b>${m.north}</b> there.`],
-      finalAnswer: ans, skill: 'seasons',
+      finalAnswer: season, skill: 'seasons',
     };
   }
 
@@ -264,25 +267,23 @@
     const i = R.int(0, 7);
     const after = R.chance(0.6);
     const ansIdx = after ? (i + 1) % 8 : (i + 7) % 8;
-    const ans = PHASES[ansIdx].name;
-    const c = choice(ans, PHASES.map((p) => p.name));
+    const name = PHASES[ansIdx].name;
     return {
       visual: phasesGridSvg({ hide: ansIdx }),
       prompt: `Moon phases go round in the same order every month. Which phase comes straight <b>${after ? 'after' : 'before'}</b> a <b>${PHASES[i].name}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(name, [`${name} moon`], 'e.g. first quarter'),
       hint: 'new → waxing crescent → first quarter → waxing gibbous → full → waning gibbous → last quarter → waning crescent → new…',
-      working: ['<b>Picture:</b> the Moon slowly filling up like a glass of milk, then emptying again.', `1. ${PHASES[i].name} is number ${i + 1} in the cycle.`, `2. The one ${after ? 'after' : 'before'} it is number ${ansIdx + 1}.`, `That is the <b>${ans}</b>.`],
-      finalAnswer: ans, skill: 'phases',
+      working: ['<b>Picture:</b> the Moon slowly filling up like a glass of milk, then emptying again.', `1. ${PHASES[i].name} is number ${i + 1} in the cycle.`, `2. The one ${after ? 'after' : 'before'} it is number ${ansIdx + 1}.`, `That is the <b>${name}</b>.`],
+      finalAnswer: name, skill: 'phases',
     };
   }
 
   function phaseNameQ(level) {
     const p = R.pick(level === 1 ? [PHASES[0], PHASES[4], PHASES[2], PHASES[6]] : PHASES);
-    const c = choice(p.name, PHASES.map((q) => q.name));
     return {
       visual: bigPhaseSvg(p.k),
       prompt: 'What is this phase of the Moon called?',
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.name, [`${p.name} moon`], 'e.g. first quarter'),
       hint: 'From Aotearoa the Moon fills up from the LEFT: waxing = lit on the left, waning = lit on the right.',
       working: ['<b>Picture:</b> the Moon filling up like a glass of milk, from the left (as seen from NZ).', `1. How much is lit? ${p.desc}.`, `So it is a <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'phases',
@@ -346,22 +347,20 @@
     const solar = R.chance(0.5);
     const style = R.pick(['name', 'middle', 'when']);
     if (style === 'name') {
-      const c = choice(solar ? 'A solar eclipse' : 'A lunar eclipse', ['A solar eclipse', 'A lunar eclipse', 'A full moon', 'A new moon'], 4);
       return {
         visual: eclipseSvg(solar ? 'solar' : 'lunar'),
         prompt: solar ? 'The Moon moves exactly between the Sun and the Earth, blocking the Sun. What is this called?' : 'The Earth moves exactly between the Sun and the Moon, so its shadow falls on the Moon. What is this called?',
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(solar ? 'solar eclipse' : 'lunar eclipse', solar ? ['a solar eclipse'] : ['a lunar eclipse'], 'one or two words'),
         hint: 'Name it after the thing that gets hidden: the Sun (solar) or the Moon (lunar).',
         working: ['<b>Picture:</b> three balls lined up in a row.', solar ? '1. What gets hidden? The <b>Sun</b>.' : '1. What gets hidden? The <b>Moon</b>.', `So it is a <b>${solar ? 'solar' : 'lunar'} eclipse</b>.`],
         finalAnswer: solar ? 'A solar eclipse' : 'A lunar eclipse', skill: 'eclipses',
       };
     }
     if (style === 'middle') {
-      const c = choice(solar ? 'The Moon' : 'The Earth', ['The Sun', 'The Moon', 'The Earth'], 3);
       return {
         visual: eclipseSvg(solar ? 'solar' : 'lunar'),
         prompt: `In a <b>${solar ? 'solar' : 'lunar'} eclipse</b>, which object is in the middle?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(solar ? 'the moon' : 'the earth', solar ? ['moon'] : ['earth'], 'one word'),
         hint: 'Whatever is in the middle casts the shadow.',
         working: [`<b>Solar:</b> Sun – <b>Moon</b> – Earth. <b>Lunar:</b> Sun – <b>Earth</b> – Moon.`, `So in a ${solar ? 'solar' : 'lunar'} eclipse the <b>${solar ? 'Moon' : 'Earth'}</b> is in the middle.`],
         finalAnswer: solar ? 'The Moon' : 'The Earth', skill: 'eclipses',

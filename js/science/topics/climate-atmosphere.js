@@ -69,6 +69,7 @@
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   function layersSvg(highlight, blank) {
@@ -196,13 +197,26 @@
       finalAnswer: g.note, skill: 'gases',
     };
   }
+  const GB_TEXT = [
+    { p: 'Which gas is the <b>most common</b> in air?', a: 'nitrogen', accept: [] },
+    { p: 'Which gas in the air do we <b>breathe in and use</b>?', a: 'oxygen', accept: [] },
+    { p: 'Which gas do plants take in for photosynthesis?', a: 'carbon dioxide', accept: ['co2'] },
+  ];
+  const GB_CHOICE = [
+    { p: 'Carbon dioxide is only about 0.04% of the air. Does that make it unimportant?', a: 'No — it traps heat and plants need it, so a small change matters a lot', w: ['Yes, it is far too small to matter', 'Yes, because plants ignore it', 'No, because it is really 40% of the air'] },
+  ];
   function gasBiggest() {
-    const q = R.pick([
-      { p: 'Which gas is the <b>most common</b> in air?', a: 'nitrogen', w: ['oxygen', 'carbon dioxide', 'argon'] },
-      { p: 'Which gas in the air do we <b>breathe in and use</b>?', a: 'oxygen', w: ['nitrogen', 'argon', 'carbon dioxide'] },
-      { p: 'Which gas do plants take in for photosynthesis?', a: 'carbon dioxide', w: ['nitrogen', 'oxygen', 'argon'] },
-      { p: 'Carbon dioxide is only about 0.04% of the air. Does that make it unimportant?', a: 'No — it traps heat and plants need it, so a small change matters a lot', w: ['Yes, it is far too small to matter', 'Yes, because plants ignore it', 'No, because it is really 40% of the air'] },
-    ]);
+    if (R.chance(0.7)) {
+      const q = R.pick(GB_TEXT);
+      return {
+        visual: gasPieSvg(),
+        prompt: q.p, answer: textAns(q.a, q.accept, 'one word'),
+        hint: 'Nitrogen 78%, oxygen 21%, carbon dioxide only 0.04% — but that little slice traps heat.',
+        working: ['<b>Picture:</b> 100 marbles of air: 78 nitrogen, 21 oxygen, 1 everything else.', `Answer: <b>${q.a}</b>.`],
+        finalAnswer: q.a, skill: 'gases',
+      };
+    }
+    const q = R.pick(GB_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       visual: gasPieSvg(),
@@ -214,11 +228,10 @@
   }
   function layerName() {
     const l = R.pick(LAYERS);
-    const c = choice(l.name, LAYERS.filter((x) => x.name !== l.name).map((x) => x.name), 4);
     return {
       visual: layersSvg(l.name, l.name),
       prompt: `Which layer of the atmosphere is <b>${l.what}</b>?`,
-      answer: ans(c),
+      answer: textAns(l.name, [], 'one word'),
       hint: 'Order from the ground up: troposphere, stratosphere, mesosphere, thermosphere.',
       working: ['<b>Picture:</b> four blankets stacked on the Earth, thinnest air at the top.', `Layer ${l.n} up is the <b>${l.name}</b>: ${l.what}.`],
       finalAnswer: l.name, skill: 'layers',
@@ -241,26 +254,38 @@
     const up = R.chance(0.7);
     const want = up ? LAYERS[i + 1].name : LAYERS[i].name;
     const from = up ? LAYERS[i].name : LAYERS[i + 1].name;
-    const c = choice(want, LAYERS.filter((x) => x.name !== want).map((x) => x.name), 4);
     return {
       visual: layersSvg(from),
       prompt: `Which layer comes straight <b>${up ? 'above' : 'below'}</b> the <b>${from}</b>?`,
-      answer: ans(c),
+      answer: textAns(want, [], 'one word'),
       hint: 'From the ground up: troposphere → stratosphere → mesosphere → thermosphere.',
       working: ['<b>Memory hook:</b> <b>T</b>errible <b>S</b>torms <b>M</b>ake <b>T</b>rouble — troposphere, stratosphere, mesosphere, thermosphere.', `${up ? 'Above' : 'Below'} the ${from} is the <b>${want}</b>.`],
       finalAnswer: want, skill: 'layers',
     };
   }
+  const LW_TEXT = [
+    { p: 'In which layer does <b>all our weather</b> happen?', a: 'troposphere' },
+    { p: 'In which layer do <b>jet planes</b> fly on a long trip?', a: 'stratosphere' },
+    { p: 'In which layer is the <b>ozone layer</b>?', a: 'stratosphere' },
+    { p: 'In which layer do <b>meteors burn up</b> as shooting stars?', a: 'mesosphere' },
+    { p: 'In which layer does the <b>space station</b> orbit?', a: 'thermosphere' },
+    { p: 'Which layer are you standing in right now?', a: 'troposphere' },
+  ];
+  const LW_CHOICE = [
+    { p: 'Why do long-distance planes fly in the stratosphere?', a: 'The air is calm and dry there, with no weather to bump them', w: ['It is closer to the Sun', 'There is more oxygen there', 'The ozone pushes them along'] },
+  ];
   function layerWhere() {
-    const q = R.pick([
-      { p: 'In which layer does <b>all our weather</b> happen?', a: 'troposphere', w: ['stratosphere', 'mesosphere', 'thermosphere'] },
-      { p: 'In which layer do <b>jet planes</b> fly on a long trip?', a: 'stratosphere', w: ['troposphere', 'mesosphere', 'thermosphere'] },
-      { p: 'In which layer is the <b>ozone layer</b>?', a: 'stratosphere', w: ['troposphere', 'mesosphere', 'thermosphere'] },
-      { p: 'In which layer do <b>meteors burn up</b> as shooting stars?', a: 'mesosphere', w: ['troposphere', 'stratosphere', 'thermosphere'] },
-      { p: 'In which layer does the <b>space station</b> orbit?', a: 'thermosphere', w: ['troposphere', 'stratosphere', 'mesosphere'] },
-      { p: 'Which layer are you standing in right now?', a: 'troposphere', w: ['stratosphere', 'mesosphere', 'thermosphere'] },
-      { p: 'Why do long-distance planes fly in the stratosphere?', a: 'The air is calm and dry there, with no weather to bump them', w: ['It is closer to the Sun', 'There is more oxygen there', 'The ozone pushes them along'] },
-    ]);
+    if (R.chance(0.75)) {
+      const q = R.pick(LW_TEXT);
+      return {
+        visual: layersSvg(),
+        prompt: q.p, answer: textAns(q.a, [], 'one word'),
+        hint: 'Weather at the bottom, ozone and planes next, meteors above that, space station at the top.',
+        working: ['<b>Picture:</b> the layer diagram, ground at the bottom.', `Answer: <b>${q.a}</b>.`],
+        finalAnswer: q.a, skill: 'layers',
+      };
+    }
+    const q = R.pick(LW_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       visual: layersSvg(),
@@ -312,18 +337,31 @@
       finalAnswer: need ? 'Yes' : 'No', skill: 'sun-safety',
     };
   }
+  const GH_TEXT = [
+    { p: 'Which of these is a greenhouse gas — carbon dioxide, nitrogen or oxygen?', a: 'carbon dioxide', accept: ['co2'] },
+    { p: 'Name a greenhouse gas that comes mostly from farm animals.', a: 'methane', accept: [] },
+    { p: 'Which gas makes up most of the air but is NOT a greenhouse gas?', a: 'nitrogen', accept: [] },
+  ];
+  const GH_CHOICE = [
+    { p: 'What is the <b>greenhouse effect</b>?', a: 'Gases in the air let sunlight in but stop some heat escaping, like a blanket', w: ['The ozone layer blocking UV rays', 'The Sun getting hotter each year', 'Clouds reflecting rain back down'] },
+    { p: 'Is the natural greenhouse effect a good thing?', a: 'Yes — without it the Earth would be about 30 °C colder and frozen', w: ['No, it is always harmful', 'It makes no difference at all', 'Yes, because it blocks UV'] },
+    { p: 'What is the problem we have now?', a: 'Burning fossil fuels adds extra greenhouse gas, making the blanket thicker', w: ['The greenhouse effect has stopped', 'The Sun has moved closer', 'The ozone hole traps the heat'] },
+    { p: 'Where does the extra carbon dioxide mainly come from?', a: 'Burning fossil fuels — coal, oil and natural gas', w: ['Breathing out', 'Volcanoes only', 'The ozone hole'] },
+    { p: 'Where does most of New Zealand’s methane come from?', a: 'Farm animals, especially cows and sheep', w: ['Car exhausts', 'Wind turbines', 'The ocean'] },
+    { p: 'In the blanket picture, what does a THICKER blanket mean?', a: 'Less heat escapes, so it gets warmer', w: ['More heat escapes, so it gets colder', 'The Sun shines less', 'Nothing changes'] },
+  ];
   function greenhouseQ() {
-    const q = R.pick([
-      { p: 'What is the <b>greenhouse effect</b>?', a: 'Gases in the air let sunlight in but stop some heat escaping, like a blanket', w: ['The ozone layer blocking UV rays', 'The Sun getting hotter each year', 'Clouds reflecting rain back down'] },
-      { p: 'Is the natural greenhouse effect a good thing?', a: 'Yes — without it the Earth would be about 30 °C colder and frozen', w: ['No, it is always harmful', 'It makes no difference at all', 'Yes, because it blocks UV'] },
-      { p: 'What is the problem we have now?', a: 'Burning fossil fuels adds extra greenhouse gas, making the blanket thicker', w: ['The greenhouse effect has stopped', 'The Sun has moved closer', 'The ozone hole traps the heat'] },
-      { p: 'Which of these is a greenhouse gas?', a: 'carbon dioxide', w: ['nitrogen', 'oxygen', 'argon'] },
-      { p: 'Which of these is a greenhouse gas?', a: 'methane', w: ['nitrogen', 'oxygen', 'helium'] },
-      { p: 'Which gas is NOT a greenhouse gas?', a: 'nitrogen', w: ['carbon dioxide', 'methane', 'water vapour'] },
-      { p: 'Where does the extra carbon dioxide mainly come from?', a: 'Burning fossil fuels — coal, oil and natural gas', w: ['Breathing out', 'Volcanoes only', 'The ozone hole'] },
-      { p: 'Where does most of New Zealand’s methane come from?', a: 'Farm animals, especially cows and sheep', w: ['Car exhausts', 'Wind turbines', 'The ocean'] },
-      { p: 'In the blanket picture, what does a THICKER blanket mean?', a: 'Less heat escapes, so it gets warmer', w: ['More heat escapes, so it gets colder', 'The Sun shines less', 'Nothing changes'] },
-    ]);
+    if (R.chance(0.35)) {
+      const q = R.pick(GH_TEXT);
+      return {
+        visual: blanketSvg(),
+        prompt: q.p, answer: textAns(q.a, q.accept, 'one word'),
+        hint: 'The main greenhouse gases are carbon dioxide, methane, water vapour and nitrous oxide. Nitrogen and oxygen are not.',
+        working: ['<b>List to remember:</b> carbon dioxide, methane, water vapour, nitrous oxide.', `Answer: <b>${q.a}</b>.`],
+        finalAnswer: q.a, skill: 'greenhouse',
+      };
+    }
+    const q = R.pick(GH_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       visual: blanketSvg(),

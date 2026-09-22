@@ -122,6 +122,7 @@
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   function pieSlices(slices, cx, cy, r) {
@@ -206,11 +207,10 @@
   /* ---------- question makers ---------- */
   function typeQ() {
     const r = R.pick(RESOURCES);
-    const c = choice(r.type === 'renewable' ? 'Renewable' : 'Non-renewable', ['Renewable', 'Non-renewable'], 2);
     return {
       visual: sortSvg(r.name),
       prompt: `Is <b>${r.name}</b> a renewable or a non-renewable energy resource?`,
-      answer: ans(c),
+      answer: textAns(r.type, r.type === 'renewable' ? [] : ['non renewable', 'nonrenewable']),
       hint: 'Renewable = it keeps coming back on its own. Non-renewable = there is a fixed amount and it will run out.',
       working: [
         '<b>Picture:</b> renewable is a tap you cannot turn off; non-renewable is a bucket that empties.',
@@ -233,10 +233,9 @@
   }
   function nameFromHow() {
     const r = R.pick(RESOURCES);
-    const c = choice(r.name, RESOURCES.filter((x) => x.name !== r.name).map((x) => x.name));
     return {
       prompt: `Which energy resource is this? <i>${cap(r.how)}.</i>`,
-      answer: ans(c),
+      answer: textAns(r.name, r.name === 'natural gas' ? ['gas'] : [], 'one word'),
       hint: 'What is the thing that does the pushing or the burning?',
       working: [`<b>Picture:</b> ${r.pic}.`, `That description matches <b>${r.name}</b>.`],
       finalAnswer: r.name, skill: 'how',
@@ -263,16 +262,15 @@
   function fossilQ() {
     const q = R.pick([
       { p: 'How were coal, oil and natural gas made?', a: 'From living things buried and squashed for millions of years', w: ['They were made in a factory', 'They formed in the last hundred years', 'They come from melted rock in volcanoes'] },
-      { p: 'What gas is given off when a fossil fuel is burnt?', a: 'carbon dioxide', w: ['oxygen', 'nitrogen', 'helium'] },
+      { p: 'What gas is given off when a fossil fuel is burnt?', a: 'carbon dioxide', w: ['oxygen', 'nitrogen', 'helium'], short: 'carbon dioxide', shortAccept: ['co2'] },
       { p: 'Why are coal, oil and gas called <b>non-renewable</b>?', a: 'They take millions of years to form, so we are using them far faster than they are made', w: ['They are expensive', 'They are dirty to dig up', 'They are only found in one country'] },
-      { p: 'Which of these is <b>not</b> a fossil fuel?', a: 'geothermal steam', w: ['coal', 'oil', 'natural gas'] },
+      { p: 'Which of these is <b>not</b> a fossil fuel?', a: 'geothermal steam', w: ['coal', 'oil', 'natural gas'], short: 'geothermal', shortAccept: ['geothermal steam'] },
       { p: 'Why does burning fossil fuels matter for the climate?', a: 'The carbon dioxide it releases traps extra heat in the atmosphere', w: ['It uses up all the oxygen', 'It makes the Sun hotter', 'It blocks sunlight from reaching us'] },
       { p: 'Where was the carbon in a lump of coal before it was coal?', a: 'In plants that grew millions of years ago', w: ['In the sea water', 'In the rocks of the mantle', 'In the air last century'] },
-      { p: 'Which fossil fuel gives off the most carbon dioxide for the energy you get?', a: 'coal', w: ['natural gas', 'wood chips', 'petrol'] },
+      { p: 'Which fossil fuel gives off the most carbon dioxide for the energy you get?', a: 'coal', w: ['natural gas', 'wood chips', 'petrol'], short: 'coal', shortAccept: [] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'one or two words') : ans(choice(q.a, q.w, 4)),
       hint: 'Fossil = ancient. Buried plants and sea creatures, squashed for millions of years.',
       working: [
         '<b>Picture:</b> a lump of coal is a squashed ancient forest, and petrol is squashed sea life.',
@@ -416,16 +414,15 @@
   }
   function hydroChain() {
     const q = R.pick([
-      { p: 'In a hydro dam, what energy does the water have while it is still sitting up in the lake?', a: 'gravitational potential', w: ['kinetic', 'electrical', 'chemical'] },
-      { p: 'In a hydro dam, what energy does the water have as it rushes down the pipe?', a: 'kinetic', w: ['gravitational potential', 'chemical', 'light'] },
-      { p: 'What comes out of the generator at a hydro station?', a: 'electrical energy', w: ['chemical energy', 'nuclear energy', 'elastic energy'] },
+      { p: 'In a hydro dam, what energy does the water have while it is still sitting up in the lake?', a: 'gravitational potential', w: ['kinetic', 'electrical', 'chemical'], short: 'gravitational potential', shortAccept: ['gravitational potential energy', 'potential energy', 'potential'] },
+      { p: 'In a hydro dam, what energy does the water have as it rushes down the pipe?', a: 'kinetic', w: ['gravitational potential', 'chemical', 'light'], short: 'kinetic', shortAccept: ['kinetic energy'] },
+      { p: 'What comes out of the generator at a hydro station?', a: 'electrical energy', w: ['chemical energy', 'nuclear energy', 'elastic energy'], short: 'electrical energy', shortAccept: ['electrical', 'electricity'] },
       { p: 'What is the full energy chain of a hydro dam?', a: 'gravitational potential → kinetic → electrical', w: ['chemical → thermal → electrical', 'kinetic → gravitational potential → light', 'light → electrical → chemical'] },
-      { p: 'What actually spins inside a hydro station to make the electricity?', a: 'a turbine joined to a generator', w: ['a magnet floating in the lake', 'the dam wall', 'a solar panel'] },
+      { p: 'What actually spins inside a hydro station to make the electricity?', a: 'a turbine joined to a generator', w: ['a magnet floating in the lake', 'the dam wall', 'a solar panel'], short: 'turbine and generator', shortAccept: ['a turbine joined to a generator', 'turbine joined to a generator', 'a turbine and a generator', 'turbine and a generator'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: damSvg(),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'a word or two') : ans(choice(q.a, q.w, 4)),
       hint: 'Follow the numbers on the picture: 1 held high, 2 rushing down, 3 spinning the generator.',
       working: ['<b>Picture:</b> a full lake sitting high above the power station.', '1 held high = <b>gravitational potential</b> → 2 rushing down = <b>kinetic</b> → 3 generator = <b>electrical</b>.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'hydro',
@@ -433,17 +430,16 @@
   }
   function nzFactQ() {
     const q = R.pick([
-      { p: 'Which resource gives New Zealand the most electricity?', a: 'hydro', w: ['coal', 'wind', 'solar'] },
+      { p: 'Which resource gives New Zealand the most electricity?', a: 'hydro', w: ['coal', 'wind', 'solar'], short: 'hydro', shortAccept: [] },
       { p: 'Where is most of New Zealand’s hydro power made?', a: 'The big South Island lakes and the Waikato River', w: ['Off the coast of Wellington', 'Under Auckland city', 'On Mount Ruapehu'] },
       { p: 'Which part of New Zealand has the geothermal power stations?', a: 'Around Taupō and Rotorua', w: ['Around Dunedin', 'The West Coast glaciers', 'Stewart Island'] },
       { p: 'Why can geothermal power run all night, when solar cannot?', a: 'The hot rock underground stays hot whatever the weather', w: ['The Moon heats it instead', 'Geothermal stations store sunlight', 'It uses batteries'] },
-      { p: 'Roughly what share of our electricity is renewable?', a: 'about 80–85%', w: ['about 20%', 'about 50%', '100%'] },
+      { p: 'Roughly what share of our electricity is renewable?', a: 'about 80–85%', w: ['about 20%', 'about 50%', '100%'], short: 'about 80-85%', shortAccept: ['80-85%', '80–85%', '84%', 'about 84%', '80%', '85%'] },
       { p: 'In a dry year the hydro lakes get low. What does New Zealand usually do?', a: 'Burn more coal and gas for a while', w: ['Turn the power off completely', 'Import water', 'Build a nuclear station'] },
       { p: 'Why does New Zealand have so much hydro power?', a: 'We have high mountains and a lot of rain, so rivers run fast downhill', w: ['We have very flat land', 'We have very little rain', 'Water is heavier here'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'a word or two') : ans(choice(q.a, q.w, 4)),
       hint: 'Aotearoa runs mostly on falling water, underground steam and wind.',
       working: ['<b>Picture:</b> the pie chart — hydro is more than half of it.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'nz',
@@ -468,11 +464,10 @@
   }
   function sortCard() {
     const r = R.pick(RESOURCES);
-    const c = choice(r.type === 'renewable' ? 'the RENEWABLE side' : 'the NON-RENEWABLE side', ['the RENEWABLE side', 'the NON-RENEWABLE side'], 2);
     return {
       visual: sortSvg(r.name),
       prompt: `Harper is sorting resource cards. Which side does the <b>${r.name}</b> card belong on?`,
-      answer: ans(c),
+      answer: textAns(r.type === 'renewable' ? 'renewable' : 'non-renewable', r.type === 'renewable' ? [] : ['non renewable', 'nonrenewable']),
       hint: 'Ask: is there a fixed amount buried in the ground, or does nature keep making more?',
       working: [
         `1. Does ${r.name} keep being made? ${r.type === 'renewable' ? 'Yes — the Sun, the wind, the rain and the hot rocks keep going.' : 'No — there is only a fixed amount left.'}`,

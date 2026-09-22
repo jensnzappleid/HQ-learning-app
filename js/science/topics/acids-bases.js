@@ -42,6 +42,14 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for the acid / neutral / alkali classification, wherever
+   *  she has to type it herself instead of picking it from a list. */
+  const TYPE_SHORT = {
+    'an acid': { value: 'acid', accept: ['an acid', 'acidic'] },
+    'neutral': { value: 'neutral', accept: [] },
+    'an alkali (a base)': { value: 'alkali', accept: ['an alkali', 'a base', 'base', 'basic'] },
+  };
 
   /* ---------- the pH scale diagram ---------- */
   const cellX = (i) => 14 + i * 21;
@@ -105,10 +113,10 @@
   function classifyPH(level) {
     const ph = R.int(0, 14);
     const correct = phType(ph);
-    const opt = choice(correct, ['an acid', 'neutral', 'an alkali (a base)'].filter((x) => x !== correct), 3);
+    const short = TYPE_SHORT[correct];
     return {
       prompt: `A solution has a <b>pH of ${ph}</b>. Is it an acid, neutral, or an alkali?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(short.value, short.accept, 'one word'),
       hint: 'Below 7 = acid. Exactly 7 = neutral. Above 7 = alkali.',
       working: ['<b>Picture:</b> the pH ruler, 0 to 14, with pure water sitting bang in the middle at 7.', `1. Is ${ph} less than 7? ${ph < 7 ? 'Yes.' : 'No.'}`, `2. Is it exactly 7? ${ph === 7 ? 'Yes.' : 'No.'}`, `So pH ${ph} is <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'ph-scale',
@@ -129,22 +137,21 @@
     }
     if (form === 'colour') {
       const col = uiColour(ph);
-      const opt = choice(col, COLOUR_NAMES.filter((c) => c !== col), 4);
       return {
         visual: phScale(ph, `pH ${ph}`),
         prompt: `Universal indicator is added to a solution with a <b>pH of ${ph}</b>. What colour does it turn?`,
-        answer: { type: 'choice', value: opt.value, choices: opt.choices },
+        answer: textAns(col, [], 'one word'),
         hint: 'Red → orange → yellow → GREEN at 7 → blue → purple, like a rainbow across the scale.',
         working: ['<b>Picture:</b> the pH ruler is a rainbow: hot red acids on the left, green neutral in the middle, cool purple alkalis on the right.', `1. Find pH ${ph} on the scale.`, `2. That box is <b>${col}</b>.`],
         finalAnswer: col, skill: 'indicators',
       };
     }
     const correct = phType(ph);
-    const opt = choice(correct, ['an acid', 'neutral', 'an alkali (a base)'].filter((x) => x !== correct), 3);
+    const short = TYPE_SHORT[correct];
     return {
       visual: phScale(ph, `pH ${ph}`),
       prompt: `The arrow shows the pH of a solution Harper has tested. Is it an acid, neutral or an alkali?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(short.value, short.accept, 'one word'),
       hint: 'Look at which side of 7 the arrow is on.',
       working: ['<b>Picture:</b> 7 is the middle of the ruler — everything left is acid, everything right is alkali.', `1. The arrow is at pH ${ph}.`, `2. That is ${ph < 7 ? 'to the LEFT of 7' : ph === 7 ? 'exactly on 7' : 'to the RIGHT of 7'}.`, `So it is <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'ph-scale',
@@ -153,10 +160,17 @@
   function colourToPh(level) {
     const col = R.pick(COLOUR_NAMES);
     const answer = { red: 'a strong acid', orange: 'a weaker acid', yellow: 'a weak acid', green: 'neutral', blue: 'an alkali', purple: 'a strong alkali' }[col];
-    const opt = choice(answer, ['a strong acid', 'a weak acid', 'neutral', 'an alkali', 'a strong alkali'].filter((x) => x !== answer), 4);
+    const short = {
+      red: { value: 'strong acid', accept: ['a strong acid'] },
+      orange: { value: 'weak acid', accept: ['a weaker acid', 'weaker acid', 'a weak acid'] },
+      yellow: { value: 'weak acid', accept: ['a weak acid'] },
+      green: { value: 'neutral', accept: [] },
+      blue: { value: 'alkali', accept: ['an alkali', 'a base', 'base'] },
+      purple: { value: 'strong alkali', accept: ['a strong alkali'] },
+    }[col];
     return {
       prompt: `Harper adds universal indicator to a solution and it turns <b>${col}</b>. What does that tell her?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(short.value, short.accept, 'a few words'),
       hint: 'Red = strong acid, green = neutral, purple = strong alkali.',
       working: ['<b>Picture:</b> the rainbow ruler — hot colours are acids, green is neutral, cool colours are alkalis.', `1. ${col.charAt(0).toUpperCase() + col.slice(1)} sits ${col === 'green' ? 'right in the middle' : ['red', 'orange', 'yellow'].includes(col) ? 'on the acid side' : 'on the alkali side'}.`, `So the solution is <b>${answer}</b>.`],
       finalAnswer: answer, skill: 'indicators',
@@ -175,10 +189,10 @@
       };
     }
     const correct = phType(s.ph);
-    const opt = choice(correct, ['an acid', 'neutral', 'an alkali (a base)'].filter((x) => x !== correct), 3);
+    const short = TYPE_SHORT[correct];
     return {
       prompt: `Is <b>${s.name}</b> an acid, neutral, or an alkali?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(short.value, short.accept, 'one word'),
       hint: 'Sour, sharp things are usually acids. Soapy, slippery, cleaning things are usually alkalis.',
       working: ['<b>Picture:</b> the pH ruler — sour lemon on the left, soap on the right, water in the middle.', `1. ${s.name.charAt(0).toUpperCase() + s.name.slice(1)} has a pH of about <b>${s.ph}</b>.`, `2. ${s.ph < 7 ? 'That is less than 7.' : s.ph === 7 ? 'That is exactly 7.' : 'That is more than 7.'}`, `So it is <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'everyday',
@@ -244,11 +258,10 @@
   function neutralisationQ(level) {
     const form = R.pick(['equation', 'what-add', 'result-ph', 'name']);
     if (form === 'equation') {
-      const opt = choice('salt + water', ['acid + water', 'a stronger acid', 'oxygen + water'], 4);
       return {
         visual: neutralSvg(),
         prompt: 'Complete the word equation: <b>acid + base ➜ ?</b>',
-        answer: { type: 'choice', value: opt.value, choices: opt.choices },
+        answer: textAns('salt + water', ['salt and water', 'salt, water', 'water and salt', 'water + salt'], 'two words'),
         hint: 'Two opposites cancel out and leave something harmless.',
         working: ['<b>Picture:</b> +1 and −1 cancel to zero.', 'The rule to learn: <b>acid + base ➜ salt + water</b>.'],
         finalAnswer: 'salt + water', skill: 'neutralisation',
@@ -267,20 +280,19 @@
     if (form === 'what-add') {
       const acidic = R.chance(0.5);
       const correct = acidic ? 'a base (an alkali)' : 'an acid';
-      const opt = choice(correct, ['a base (an alkali)', 'an acid', 'more water only', 'another indicator'].filter((x) => x !== correct), 4);
+      const short = acidic ? { value: 'base', accept: ['a base', 'an alkali', 'alkali'] } : { value: 'acid', accept: ['an acid', 'acidic'] };
       return {
         prompt: `A solution has a pH of <b>${acidic ? R.int(1, 4) : R.int(10, 13)}</b>. What should you add to bring it back to neutral?`,
-        answer: { type: 'choice', value: opt.value, choices: opt.choices },
+        answer: textAns(short.value, short.accept, 'one word'),
         hint: 'To cancel something out you always add its opposite.',
         working: ['<b>Picture:</b> a see-saw — to level it, push down the other side.', `1. The solution is ${acidic ? 'an acid (below 7)' : 'an alkali (above 7)'}.`, `2. The opposite of ${acidic ? 'an acid is a base' : 'an alkali is an acid'}.`, `So add <b>${correct}</b>.`],
         finalAnswer: correct, skill: 'neutralisation',
       };
     }
-    const opt = choice('neutralisation', ['evaporation', 'diffusion', 'filtration'], 4);
     return {
       visual: neutralSvg(),
       prompt: 'What is the name of the reaction when an acid and a base cancel each other out?',
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns('neutralisation', ['neutralization', 'neutralisation reaction'], 'one word'),
       hint: 'The clue is in the word "neutral".',
       working: ['<b>Picture:</b> both sides of the see-saw balance at pH 7.', 'It is called <b>neutralisation</b>.'],
       finalAnswer: 'neutralisation', skill: 'neutralisation',

@@ -85,6 +85,7 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   const conceptSvg = () => `<svg viewBox="0 0 344 200" width="344" height="200" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="12" font-weight="700">
@@ -141,10 +142,9 @@
   function classify(level) {
     const isChem = R.chance(0.5);
     const item = isChem ? R.pick(CHEMICAL) : R.pick(PHYSICAL);
-    const opt = choice(isChem ? 'a chemical change' : 'a physical change', [isChem ? 'a physical change' : 'a chemical change'], 2);
     return {
       prompt: `Is <b>${item.what}</b> a physical change or a chemical change?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(isChem ? 'chemical' : 'physical', isChem ? ['chemical change', 'a chemical change'] : ['physical change', 'a physical change'], 'one word'),
       hint: 'Ask the big question: is a BRAND-NEW substance made?',
       working: [
         '<b>Picture:</b> melting ice (you can freeze it back) vs burning wood (you can never un-burn it).',
@@ -232,18 +232,14 @@
   }
   function eqVocab(level) {
     const askReactant = R.chance(0.5);
-    const correct = askReactant ? 'the substances you start with, written before the arrow' : 'the new substances that are made, written after the arrow';
-    const opt = choice(correct, [
-      askReactant ? 'the new substances that are made, written after the arrow' : 'the substances you start with, written before the arrow',
-      'the equipment used in the experiment',
-      'the energy given out during the reaction',
-    ], 4);
+    const def = askReactant ? 'the substances you start with, written before the arrow' : 'the new substances that are made, written after the arrow';
+    const term = askReactant ? 'reactants' : 'products';
     return {
-      prompt: `In a word equation, what are the <b>${askReactant ? 'reactants' : 'products'}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      prompt: `In a word equation, what word means <b>${def}</b> — reactants or products?`,
+      answer: textAns(term, [term.slice(0, -1)], 'one word'),
       hint: 'REactants are REady at the start. PROducts are PROduced.',
-      working: ['<b>Picture:</b> reactants ➜ products, like ingredients ➜ cake.', `<b>${askReactant ? 'Reactants' : 'Products'}</b> = ${correct}.`],
-      finalAnswer: correct, skill: 'equations',
+      working: ['<b>Picture:</b> reactants ➜ products, like ingredients ➜ cake.', `<b>${askReactant ? 'Reactants' : 'Products'}</b> = ${def}.`],
+      finalAnswer: askReactant ? 'Reactants' : 'Products', skill: 'equations',
     };
   }
   function rustNeeds(level) {
@@ -279,14 +275,9 @@
       };
     }
     if (form === 'is-new') {
-      const opt = choice('Chemical — rust is a brand-new substance and the nail can never go back', [
-        'Physical — the nail is still a nail underneath',
-        'Physical — you can scrape the rust off',
-        'Neither — nothing has changed',
-      ], 4);
       return {
         prompt: 'An iron nail left outside at the beach goes orange and flaky. Is rusting a physical or a chemical change?',
-        answer: { type: 'choice', value: opt.value, choices: opt.choices },
+        answer: textAns('chemical', ['chemical change', 'a chemical change'], 'one word'),
         hint: 'Is the orange stuff still iron?',
         working: ['<b>Picture:</b> the orange flakes are not iron any more.', '1. Is a new substance made? Yes — hydrated iron oxide.', '2. Can you turn rust back into a shiny nail? No.', 'So it is a <b>chemical change</b>.'],
         finalAnswer: 'Chemical — a new substance (rust) is made', skill: 'rusting',
@@ -305,12 +296,11 @@
     const form = R.pick(['triangle', 'remove', 'products']);
     if (form === 'triangle') {
       const missing = R.pick(['fuel', 'oxygen', 'heat']);
-      const opt = choice(missing, ['fuel', 'oxygen', 'heat'].filter((x) => x !== missing).concat(['water']), 4);
       const clue = { fuel: 'the thing that actually burns, like wood or gas', oxygen: 'the gas from the air that the fire needs', heat: 'what starts the fire off and keeps it going' };
       return {
         visual: fireTriangle(),
         prompt: `The fire triangle shows the three things a fire needs. Which one is <b>${clue[missing]}</b>?`,
-        answer: { type: 'choice', value: opt.value, choices: opt.choices },
+        answer: textAns(missing, [], 'one word'),
         hint: 'Fuel, oxygen and heat — take any one away and the fire goes out.',
         working: ['<b>Picture:</b> a three-legged stool — remove one leg and it falls over.', `1. ${clue[missing].charAt(0).toUpperCase() + clue[missing].slice(1)}.`, `That is <b>${missing}</b>.`],
         finalAnswer: missing, skill: 'burning',
@@ -324,11 +314,10 @@
         { act: 'smothering a fire with a fire blanket', part: 'oxygen' },
         { act: 'clearing dry scrub away in front of a bush fire', part: 'fuel' },
       ]);
-      const opt = choice(way.part, ['fuel', 'oxygen', 'heat'].filter((x) => x !== way.part), 3);
       return {
         visual: fireTriangle(),
         prompt: `Which side of the fire triangle are you taking away by <b>${way.act}</b>?`,
-        answer: { type: 'choice', value: opt.value, choices: opt.choices },
+        answer: textAns(way.part, [], 'one word'),
         hint: 'Fuel = the thing that burns. Oxygen = air getting in. Heat = the temperature.',
         working: ['<b>Picture:</b> the three-legged stool — knock out one leg.', `1. ${way.act.charAt(0).toUpperCase() + way.act.slice(1)} stops the ${way.part} reaching the fire.`, `So you are removing the <b>${way.part}</b>.`],
         finalAnswer: way.part, skill: 'burning',

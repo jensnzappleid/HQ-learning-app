@@ -82,6 +82,55 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for the threat / predator / conservation-method names, used wherever she has
+   *  to type the term herself instead of picking it from a list. */
+  const THREAT_ACCEPT = {
+    'introduced predators': ['predators', 'introduced predator', 'predator'],
+    'habitat loss': ['loss of habitat', 'destruction of habitat'],
+    pollution: [],
+    'climate change': ['global warming'],
+    'fishing nets': ['nets', 'set nets', 'fishing net'],
+    'introduced browsers': ['browsers', 'introduced browser'],
+  };
+  const PREDATOR_ACCEPT = {
+    stoat: ['stoats', 'a stoat'],
+    'ship rat': ['rat', 'rats', 'a rat', 'black rat', 'a ship rat'],
+    possum: ['possums', 'a possum', 'brushtail possum'],
+    'feral cat': ['cat', 'cats', 'a cat', 'a feral cat'],
+    hedgehog: ['hedgehogs', 'a hedgehog'],
+    mouse: ['mice', 'a mouse'],
+  };
+  const ACTION_ACCEPT = {
+    trapping: ['traps', 'trap lines'],
+    'Predator Free 2050': ['predator free 2050', 'pf2050', 'predator free'],
+    'an offshore island sanctuary': ['offshore island sanctuary', 'island sanctuary', 'an island sanctuary', 'a predator-free island', 'predator-free island'],
+    'a fenced sanctuary': ['fenced sanctuary', 'a fenced mainland sanctuary', 'fenced mainland sanctuary', 'a predator-proof fence', 'mainland sanctuary'],
+    'captive breeding': ['breeding in captivity'],
+    replanting: ['planting trees', 'planting', 'replanting trees'],
+    'a marine reserve': ['marine reserve'],
+    monitoring: ['keeping records', 'record keeping'],
+  };
+  const WORD_ACCEPT = {
+    biodiversity: [],
+    endemic: ['found only here', 'unique to new zealand'],
+    native: [],
+    introduced: ['brought in', 'brought here by people', 'non-native'],
+    extinct: ['gone forever', 'died out'],
+    endangered: ['at risk', 'nearly extinct'],
+    conservation: ['looking after nature', 'protecting wildlife'],
+    sanctuary: ['a reserve', 'a protected area', 'reserve'],
+    'marine reserve': ['a marine protected area', 'no-take zone'],
+    translocation: ['moving animals', 'relocation', 'moving a species'],
+    habitat: ['home', 'natural home'],
+  };
+  const MAORI_WORD_ACCEPT = {
+    kaitiakitanga: ['guardianship'],
+    'rāhui': ['rahui'],
+    maramataka: [],
+    'mātauranga Māori': ['matauranga maori', 'matauranga', 'mātauranga'],
+    'mahinga kai': [],
+  };
 
   /* ---------- diagrams ---------- */
   function conceptSvg() {
@@ -188,7 +237,7 @@
     if (R.chance(0.55)) {
       return {
         prompt: `Is the <b>${s.name}</b> extinct, or endangered but still alive?`,
-        answer: ch(s.status === 'extinct' ? 'extinct — none are left anywhere' : 'endangered — some are still alive', ['extinct — none are left anywhere', 'endangered — some are still alive'], 2),
+        answer: textAns(s.status, s.status === 'extinct' ? ['none are left anywhere', 'gone forever'] : ['some are still alive', 'still alive', 'a few are left'], 'one word'),
         hint: 'Extinct means gone forever. Endangered means a few are hanging on.',
         working: [`<b>Fact:</b> the ${s.name} is ${s.note}.`, `So it is <b>${s.status}</b>.`],
         finalAnswer: s.status, skill: 'status',
@@ -229,7 +278,7 @@
     if (form === 2) {
       return {
         prompt: `Which threat is this? "<b>${cap(t.harm)}</b>"`,
-        answer: ch(t.name, THREATS.map((x) => x.name)),
+        answer: textAns(t.name, THREAT_ACCEPT[t.name], 'a few words'),
         hint: 'Name the pressure being described.',
         working: [`That describes <b>${t.name}</b>.`, `The usual answer to it is ${t.fix}.`],
         finalAnswer: t.name, skill: 'threats',
@@ -256,7 +305,7 @@
     }
     return {
       prompt: `Which introduced pest <b>${p.harm}</b>?`,
-      answer: ch(p.name, PREDATORS.map((x) => x.name)),
+      answer: textAns(p.name, PREDATOR_ACCEPT[p.name], 'one word'),
       hint: 'Match the damage to the animal that does it.',
       working: [`That damage is done by the <b>${p.name}</b>.`, 'Traps in the bush target rats, stoats and possums together.'],
       finalAnswer: p.name, skill: 'predators',
@@ -285,7 +334,7 @@
     }
     return {
       prompt: `Which conservation method is this? "<b>${cap(a.what)}</b>"`,
-      answer: ch(a.name, ACTIONS.map((x) => x.name)),
+      answer: textAns(a.name, ACTION_ACCEPT[a.name], 'a few words'),
       hint: 'Name the method being described.',
       working: [`That is <b>${a.name}</b>.`, `It works because ${a.why}.`],
       finalAnswer: a.name, skill: 'actions',
@@ -297,18 +346,18 @@
       ? [
         { p: 'Why is an offshore island such a good place to protect a rare bird?', a: 'Once every predator is removed, the sea stops them walking back in', w: ['Islands have more food than the mainland', 'Birds fly better over the sea', 'Predators cannot live in salty air'] },
         { p: 'What has to be done to an island <b>before</b> rare birds are moved there?', a: 'Every last rat, stoat and cat has to be removed', w: ['All the trees have to be cut down', 'A fence has to be built round the whole island', 'The island has to be joined to the mainland'] },
-        { p: 'Moving takahē to a predator-free island is an example of what?', a: 'translocation', w: ['migration', 'hibernation', 'selective breeding'] },
+        { p: 'Moving takahē to a predator-free island is an example of what?', a: 'translocation', w: ['migration', 'hibernation', 'selective breeding'], short: 'translocation', shortAccept: ['a translocation', 'moving animals', 'relocation'] },
       ]
       : [
         { p: 'Why does a predator-proof fence work on the mainland?', a: 'It keeps rats, stoats, possums and cats out, so the bush inside is safe to nest in', w: ['It keeps the native birds from flying away', 'It stops the wind damaging the trees', 'It warms the bush up inside'] },
         { p: 'What has to happen inside a new fenced sanctuary before the birds are safe?', a: 'Every predator already inside has to be trapped out', w: ['Every tree has to be replanted', 'The fence has to be painted', 'The soil has to be replaced'] },
-        { p: 'Zealandia in Wellington is ringed by a special fence. What is that an example of?', a: 'a fenced mainland sanctuary', w: ['a marine reserve', 'a national park with no protection', 'a zoo'] },
+        { p: 'Zealandia in Wellington is ringed by a special fence. What is that an example of?', a: 'a fenced mainland sanctuary', w: ['a marine reserve', 'a national park with no protection', 'a zoo'], short: 'a fenced sanctuary', shortAccept: ['fenced sanctuary', 'fenced mainland sanctuary', 'a fenced mainland sanctuary', 'mainland sanctuary', 'a predator-proof fence'] },
       ];
     const f = R.pick(forms);
     return {
       visual: safeSvg(island),
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a few words') : ch(f.a, f.w, 4),
       hint: island ? 'The sea is doing the same job a fence does.' : 'The fence is doing the same job the sea does around an island.',
       working: [
         `<b>Picture:</b> ${island ? 'an island with water all round it' : 'a fence with a curved hood so nothing can climb over'} — a wall the predators cannot get past.`,
@@ -331,7 +380,7 @@
     }
     return {
       prompt: `Which word means "<b>${w.mean}</b>"?`,
-      answer: ch(w.word, WORDS.map((x) => x.word)),
+      answer: textAns(w.word, WORD_ACCEPT[w.word], 'one word'),
       hint: `Think of ${w.ex}.`,
       working: [`<b>Example:</b> ${w.ex}.`, `That word is <b>${w.word}</b>.`],
       finalAnswer: w.word, skill: 'words',
@@ -350,7 +399,7 @@
     }
     return {
       prompt: `Which word means "<b>${m.mean}</b>"?`,
-      answer: ch(m.word, MATAURANGA.map((x) => x.word)),
+      answer: textAns(m.word, MAORI_WORD_ACCEPT[m.word], m.word.indexOf(' ') > -1 ? 'two words' : 'one word'),
       hint: `Think of ${m.ex}.`,
       working: [`<b>Example:</b> ${m.ex}.`, `That word is <b>${m.word}</b>.`],
       finalAnswer: m.word, skill: 'matauranga',

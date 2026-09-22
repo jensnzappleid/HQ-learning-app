@@ -48,6 +48,29 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for the water-cycle stage names, instrument names and measured quantities. */
+  const STAGE_ACCEPT = {
+    evaporation: ['evaporate', 'evaporating'],
+    transpiration: ['transpire', 'transpiring'],
+    condensation: ['condense', 'condensing'],
+    precipitation: ['rain'],
+    collection: ['collecting'],
+  };
+  const MEASURE_ACCEPT = {
+    temperature: [],
+    rainfall: ['rain'],
+    'wind speed': ['windspeed'],
+    'wind direction': [],
+    'air pressure': ['pressure'],
+  };
+  const INSTRUMENT_ACCEPT = {
+    thermometer: ['a thermometer'],
+    'rain gauge': ['a rain gauge', 'raingauge'],
+    anemometer: ['an anemometer'],
+    'wind vane': ['a wind vane', 'weather vane', 'a weathervane'],
+    barometer: ['a barometer'],
+  };
 
   /* ---------- diagrams ---------- */
   function waterCycleSvg(hi) {
@@ -191,11 +214,10 @@
   function stageNameQ(level) {
     const st = R.pick(STAGES);
     if (R.chance(0.5)) {
-      const c = choice(st.n, STAGES.map((x) => x.n), 4);
       return {
         visual: R.chance(0.4) ? waterCycleSvg() : undefined,
         prompt: `In the water cycle, what is it called when <b>${st.what}</b>?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(st.n, STAGE_ACCEPT[st.n], 'one word'),
         hint: `It happens ${st.where}.`,
         working: [`<b>Picture:</b> ${st.pic}.`, `That stage is <b>${st.n}</b>.`],
         finalAnswer: st.n, skill: 'water-cycle',
@@ -214,11 +236,10 @@
   function cycleOrderQ(level) {
     const i = R.int(0, CYCLE.length - 1);
     const next = CYCLE[(i + 1) % CYCLE.length];
-    const c = choice(next, STAGES.map((x) => x.n), 4);
     return {
       visual: waterCycleSvg(next),
       prompt: `The water cycle goes round and round. What comes straight <b>after ${CYCLE[i]}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(next, STAGE_ACCEPT[next], 'one word'),
       hint: 'evaporation → condensation → precipitation → collection → and round again.',
       working: ['<b>Picture:</b> water going up as invisible vapour, cooling into clouds, falling as rain, running back to the sea.', `Order: ${CYCLE.join(' → ')} → (back to the start).`, `After ${CYCLE[i]} comes <b>${next}</b>.`],
       finalAnswer: next, skill: 'water-cycle',
@@ -229,20 +250,18 @@
     const it = R.pick(INSTRUMENTS);
     const style = R.pick(['measures', 'which', 'unit', 'pic']);
     if (style === 'measures') {
-      const c = choice(it.m, INSTRUMENTS.map((x) => x.m), 4);
       return {
         prompt: `What does a <b>${it.n}</b> measure?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(it.m, MEASURE_ACCEPT[it.m], 'a few words'),
         hint: `It looks like ${it.pic}.`,
         working: [`<b>Picture:</b> ${it.pic}.`, `A ${it.n} measures <b>${it.m}</b>, in ${it.unit}.`],
         finalAnswer: it.m, skill: 'instruments',
       };
     }
     if (style === 'which') {
-      const c = choice(it.n, INSTRUMENTS.map((x) => x.n), 4);
       return {
         prompt: `Which instrument would you use to measure <b>${it.m}</b>?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(it.n, INSTRUMENT_ACCEPT[it.n], 'one word'),
         hint: `You are looking for ${it.pic}.`,
         working: [`<b>Picture:</b> ${it.pic}.`, `That is a <b>${it.n}</b>.`],
         finalAnswer: it.n, skill: 'instruments',
@@ -258,11 +277,10 @@
         finalAnswer: it.unit, skill: 'instruments',
       };
     }
-    const c = choice(it.m, INSTRUMENTS.map((x) => x.m), 4);
     return {
       visual: instrumentPicSvg(it.n),
       prompt: 'Look at the weather instrument. What does it measure?',
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(it.m, MEASURE_ACCEPT[it.m], 'a few words'),
       hint: `It is ${it.pic}.`,
       working: [`<b>Picture:</b> ${it.pic}.`, `That is a <b>${it.n}</b>, so it measures <b>${it.m}</b>.`],
       finalAnswer: it.m, skill: 'instruments',
@@ -296,10 +314,9 @@
 
   function weatherClimateQ(level) {
     const it = R.pick(WEATHER_OR_CLIMATE);
-    const c = choice(it.a, ['weather', 'climate'], 2);
     return {
       prompt: `Is this <b>weather</b> or <b>climate</b>?<br>"${it.s}"`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(it.a, [], 'one word'),
       hint: 'Weather = what it is doing right now or this week. Climate = the usual pattern over many years.',
       working: ['<b>Picture:</b> weather is what you wear today; climate is what is in your wardrobe.', `1. Is this about right now, or about the usual pattern over years? ${it.a === 'weather' ? 'Right now.' : 'The usual pattern.'}`, `So it is <b>${it.a}</b>.`],
       finalAnswer: it.a, skill: 'weather-climate',
@@ -318,10 +335,9 @@
         finalAnswer: cl.what, skill: 'clouds',
       };
     }
-    const c = choice(cl.n, CLOUDS.map((x) => x.n), 4);
     return {
       prompt: `Which cloud is described here: <b>${cl.what}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(cl.n, [], 'one word'),
       hint: `It is ${cl.hi}.`,
       working: ['<b>Picture:</b> looking up at the sky and naming the shape.', `That is <b>${cl.n}</b>.`],
       finalAnswer: cl.n, skill: 'clouds',

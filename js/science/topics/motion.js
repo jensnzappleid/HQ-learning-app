@@ -34,6 +34,7 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
   const r1 = (v) => Math.round(v * 10) / 10;
   const segSpeed = (p, q) => r1((q[1] - p[1]) / (q[0] - p[0]));
 
@@ -160,17 +161,16 @@
   }
   function unitFact() {
     const q = R.pick([
-      { p: 'Which unit is a <b>speed</b>?', a: 'metres per second (m/s)', w: ['metres (m)', 'seconds (s)', 'newtons (N)'] },
+      { p: 'Which unit is a <b>speed</b>?', a: 'metres per second (m/s)', w: ['metres (m)', 'seconds (s)', 'newtons (N)'], short: 'm/s', shortAccept: ['metres per second', 'meters per second'] },
       { p: 'What does <b>m/s</b> mean?', a: 'How many metres are covered each second', w: ['How many seconds each metre takes', 'How many metres there are altogether', 'How heavy something is'] },
-      { p: 'You measure a distance in km and a time in hours. What unit will the speed be in?', a: 'km/h', w: ['m/s', 'km', 'hours'] },
-      { p: 'You measure a distance in metres and a time in seconds. What unit will the speed be in?', a: 'm/s', w: ['km/h', 'metres', 'seconds'] },
+      { p: 'You measure a distance in km and a time in hours. What unit will the speed be in?', a: 'km/h', w: ['m/s', 'km', 'hours'], short: 'km/h', shortAccept: ['kilometres per hour', 'kilometers per hour', 'km per h'] },
+      { p: 'You measure a distance in metres and a time in seconds. What unit will the speed be in?', a: 'm/s', w: ['km/h', 'metres', 'seconds'], short: 'm/s', shortAccept: ['metres per second', 'meters per second'] },
       { p: 'Which of these is the <b>fastest</b>?', a: '30 m/s', w: ['30 km/h', '3 m/s', '10 km/h'] },
       { p: 'What do you need to measure to work out a speed?', a: 'A distance and a time', w: ['A distance and a mass', 'A time and a force', 'Only a distance'] },
       { p: 'Which instruments would you use to measure speed on the field?', a: 'A trundle wheel and a stopwatch', w: ['A ruler and a thermometer', 'A newton meter and a stopwatch', 'Scales and a measuring cylinder'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'a unit') : ans(choice(q.a, q.w, 4)),
       hint: 'Speed is always "how much distance" divided by "how much time".',
       working: ['<b>Picture:</b> speed is how much ground you cover in one second.', 'speed = distance ÷ time, so the unit is distance-unit / time-unit.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'units',
@@ -306,13 +306,12 @@
     const q = R.pick([
       { p: 'On a distance-time graph, what does a <b>flat</b> (horizontal) line mean?', a: 'It is stopped', w: ['It is going very fast', 'It is going backwards', 'It is speeding up'] },
       { p: 'On a distance-time graph, what does a <b>steeper</b> line mean?', a: 'It is going faster', w: ['It is going slower', 'It has stopped', 'It is heavier'] },
-      { p: 'On a distance-time graph, what goes on the bottom (x) axis?', a: 'Time', w: ['Distance', 'Speed', 'Mass'] },
+      { p: 'On a distance-time graph, what goes on the bottom (x) axis?', a: 'Time', w: ['Distance', 'Speed', 'Mass'], short: 'time', shortAccept: [] },
       { p: 'A distance-time graph is a straight sloping line. What does that tell you?', a: 'It is moving at a steady speed', w: ['It is speeding up', 'It is slowing down', 'It is stopped'] },
       { p: 'A distance-time line curves and gets steeper and steeper. What is happening?', a: 'It is speeding up', w: ['It is slowing down', 'It is stopped', 'It is going backwards'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'one word') : ans(choice(q.a, q.w, 4)),
       hint: 'Steepness = speed. No steepness at all = no speed.',
       working: ['<b>Picture:</b> the line is like a hill — the steeper the hill, the faster you are going.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'graphs',

@@ -94,6 +94,19 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for each named force, used wherever she has to type the name herself. */
+  const FORCE_ACCEPT = {
+    gravity: [],
+    friction: [],
+    'air resistance': ['air drag', 'drag'],
+    'water resistance': ['water drag', 'drag'],
+    upthrust: ['buoyancy', 'the upthrust'],
+    tension: [],
+    magnetism: ['magnetic force', 'a magnetic force'],
+    'a push': ['push', 'a pushing force'],
+    'a pull': ['pull', 'a pulling force'],
+  };
   const r1 = (v) => Math.round(v * 10) / 10;
 
   /* ---------- diagrams ---------- */
@@ -132,10 +145,9 @@
   /* ---------- question makers ---------- */
   function nameForce() {
     const f = R.pick(FORCES);
-    const c = choice(f.name, NAMES);
     return {
       prompt: `Which force is <b>${f.desc}</b>?`,
-      answer: ans(c),
+      answer: textAns(f.name, FORCE_ACCEPT[f.name], 'one or two words'),
       hint: `Think of ${f.pic}.`,
       working: [`<b>Picture:</b> ${f.pic}.`, `That is <b>${f.name}</b>: ${f.desc}.`],
       finalAnswer: f.name, skill: 'naming',
@@ -143,10 +155,9 @@
   }
   function forceHere() {
     const s = R.pick(SITUATIONS);
-    const c = choice(s.f, NAMES);
     return {
       prompt: `Which force is mainly at work here: <b>${s.s}</b>?`,
-      answer: ans(c),
+      answer: textAns(s.f, FORCE_ACCEPT[s.f], 'one or two words'),
       hint: 'Ask yourself: is something rubbing, falling, floating, stretched, or pushing through air or water?',
       working: [`<b>Picture:</b> ${s.s}.`, `The force doing that job is <b>${s.f}</b>.`],
       finalAnswer: s.f, skill: 'naming',
@@ -155,10 +166,9 @@
   function contactOrNot() {
     const f = R.pick(FORCES);
     const correct = f.contact ? 'A contact force' : 'A non-contact force';
-    const c = choice(correct, ['A contact force', 'A non-contact force'], 2);
     return {
       prompt: `Is <b>${f.name}</b> a contact force or a non-contact force?`,
-      answer: ans(c),
+      answer: textAns(f.contact ? 'contact' : 'non-contact', f.contact ? ['a contact force', 'contact force'] : ['a non-contact force', 'non-contact force', 'noncontact'], 'one word'),
       hint: 'Only three forces work with a gap: gravity, magnetism and static electricity. Everything else has to touch.',
       working: [
         '<b>Picture:</b> can it work across a gap, like a magnet pulling a paper clip from a few cm away?',
@@ -197,11 +207,10 @@
     const o = vertical ? { up: a, down: b, obj: R.pick(['balloon', 'ball', 'diver']) } : { left: a, right: b, obj: R.pick(['box', 'sledge', 'trolley']) };
     o.caption = 'the two forces on this object';
     const balanced = a === b;
-    const c = choice(balanced ? 'Balanced' : 'Unbalanced', ['Balanced', 'Unbalanced'], 2);
     return {
       visual: forceBox(o),
       prompt: `Look at the force arrows. Are the forces <b>balanced</b> or <b>unbalanced</b>?`,
-      answer: ans(c),
+      answer: textAns(balanced ? 'balanced' : 'unbalanced', [], 'one word'),
       hint: 'Balanced means the two arrows are exactly the same size and pull opposite ways.',
       working: [
         '<b>Picture:</b> a tug-of-war. If both teams pull equally hard, the rope does not move.',
@@ -325,16 +334,29 @@
       finalAnswer: `${Math.round(m * 1.6)} N`, skill: 'weight',
     };
   }
+  const MW_TEXT = [
+    { p: 'What is <b>mass</b> measured in?', a: 'kilograms', accept: ['kg', 'kilogram', 'kilograms (kg)'], full: 'kilograms (kg)' },
+    { p: 'What is <b>weight</b> measured in?', a: 'newtons', accept: ['newton', 'n', 'newtons (n)'], full: 'newtons (N)' },
+    { p: 'Which instrument measures a <b>force</b>?', a: 'newton meter', accept: ['a newton meter', 'force meter', 'a force meter'], full: 'a newton meter (force meter)' },
+  ];
+  const MW_CHOICE = [
+    { p: 'What does <b>mass</b> tell you?', a: 'How much stuff (matter) something is made of', w: ['How hard gravity pulls on it', 'How big it looks', 'How fast it can go'] },
+    { p: 'What does <b>weight</b> tell you?', a: 'How hard gravity pulls on it', w: ['How much stuff it is made of', 'How big it looks', 'How much space it takes up'] },
+    { p: 'You take a 6 kg bag to the Moon. What happens to its <b>mass</b>?', a: 'It stays exactly the same', w: ['It gets about 6 times smaller', 'It becomes zero', 'It gets 6 times bigger'] },
+    { p: 'You take a 6 kg bag to the Moon. What happens to its <b>weight</b>?', a: 'It gets about 6 times smaller', w: ['It stays exactly the same', 'It becomes zero', 'It gets 6 times bigger'] },
+  ];
   function massVsWeight() {
-    const q = R.pick([
-      { p: 'What is <b>mass</b> measured in?', a: 'kilograms (kg)', w: ['newtons (N)', 'metres (m)', 'litres (L)'] },
-      { p: 'What is <b>weight</b> measured in?', a: 'newtons (N)', w: ['kilograms (kg)', 'metres (m)', 'litres (L)'] },
-      { p: 'What does <b>mass</b> tell you?', a: 'How much stuff (matter) something is made of', w: ['How hard gravity pulls on it', 'How big it looks', 'How fast it can go'] },
-      { p: 'What does <b>weight</b> tell you?', a: 'How hard gravity pulls on it', w: ['How much stuff it is made of', 'How big it looks', 'How much space it takes up'] },
-      { p: 'You take a 6 kg bag to the Moon. What happens to its <b>mass</b>?', a: 'It stays exactly the same', w: ['It gets about 6 times smaller', 'It becomes zero', 'It gets 6 times bigger'] },
-      { p: 'You take a 6 kg bag to the Moon. What happens to its <b>weight</b>?', a: 'It gets about 6 times smaller', w: ['It stays exactly the same', 'It becomes zero', 'It gets 6 times bigger'] },
-      { p: 'Which instrument measures a <b>force</b>?', a: 'A newton meter (force meter)', w: ['A thermometer', 'A measuring cylinder', 'A stopwatch'] },
-    ]);
+    if (R.chance(0.4)) {
+      const q = R.pick(MW_TEXT);
+      return {
+        prompt: q.p,
+        answer: textAns(q.a, q.accept, 'one word'),
+        hint: 'Mass = how much stuff, in kg. Weight = the pull of gravity on that stuff, in newtons.',
+        working: ['<b>Picture:</b> your body has the same amount of stuff everywhere, but the Moon pulls on it far more gently.', '<b>mass</b> = kg, never changes. <b>weight</b> = newtons, changes with gravity.', `Answer: <b>${q.full}</b>.`],
+        finalAnswer: q.full, skill: 'mass-weight',
+      };
+    }
+    const q = R.pick(MW_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       prompt: q.p,
@@ -347,10 +369,9 @@
   function frictionUseful() {
     const f = R.pick(FRICTION);
     const correct = f.use ? 'Useful' : 'A nuisance';
-    const c = choice(correct, ['Useful', 'A nuisance'], 2);
     return {
       prompt: `Is friction <b>useful</b> or <b>a nuisance</b> here: ${f.s}?`,
-      answer: ans(c),
+      answer: textAns(f.use ? 'useful' : 'a nuisance', f.use ? [] : ['nuisance', 'a pain', 'annoying'], 'one word'),
       hint: 'Ask: is the rubbing helping us grip and stop, or is it wearing things out and wasting energy?',
       working: ['<b>Picture:</b> friction is grip. Grip is great on your shoes, but awful inside a machine.', `1. What is the rubbing doing? ${f.why}.`, `So here friction is <b>${correct.toLowerCase()}</b>.`],
       finalAnswer: correct, skill: 'friction',

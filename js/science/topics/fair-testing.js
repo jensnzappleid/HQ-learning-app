@@ -70,6 +70,27 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for the equipment used to measure each investigation's result. */
+  const TOOL_ACCEPT = {
+    'a ruler': ['ruler'],
+    'a tape measure': ['tape measure'],
+    'a thermometer': ['thermometer'],
+    'a stopwatch': ['stopwatch', 'a stop watch', 'stop watch'],
+    'a metre ruler': ['metre ruler', 'meter ruler', 'a meter ruler'],
+    'a colour chart': ['colour chart', 'color chart', 'a color chart'],
+    counting: ['count them', 'counting them'],
+    'a light meter': ['light meter'],
+    'a squared grid': ['squared grid', 'a grid'],
+  };
+  /** typed synonyms for the five named parts of an investigation. */
+  const PART_ACCEPT = {
+    'independent variable': ['independent', 'the independent variable'],
+    'dependent variable': ['dependent', 'the dependent variable'],
+    'controlled variables': ['controlled variable', 'controls', 'constants', 'the controlled variables'],
+    prediction: ['a prediction'],
+    conclusion: ['a conclusion'],
+  };
 
   /* ---------- diagrams ---------- */
   function wrap(text, perLine) {
@@ -240,10 +261,9 @@
         finalAnswer: p.d, skill: 'parts',
       };
     }
-    const c = choice(p.n, PARTS.map((x) => x.n), 4);
     return {
       prompt: `Which one is "<b>${p.short}</b>"?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(p.n, PART_ACCEPT[p.n], 'two or three words'),
       hint: 'Independent = I change it. Dependent = it depends on what I changed, so I measure it.',
       working: ['<b>Picture:</b> the three boxes: CHANGE, KEEP THE SAME, MEASURE.', `${cap(p.short)} is the <b>${p.n}</b>.`],
       finalAnswer: p.n, skill: 'parts',
@@ -347,10 +367,9 @@
 
   function toolQ(level) {
     const inv = R.pick(INV);
-    const c = choice(inv.tool, INV.map((x) => x.tool), 4);
     return {
       prompt: `${inv.t}<br>What should she use to measure <b>${inv.dv}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(inv.tool, TOOL_ACCEPT[inv.tool], 'one or two words'),
       hint: `The result is measured in ${inv.unit}.`,
       working: [`<b>Picture:</b> writing "${inv.dv} (${inv.unit})" as the heading of her results column.`, `To measure that you need <b>${inv.tool}</b>.`],
       finalAnswer: inv.tool, skill: 'measuring',

@@ -62,6 +62,20 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for each material property, used when she has to name the property herself. */
+  const PROP_ACCEPT = {
+    hardness: ['hard'],
+    strength: ['strong'],
+    flexibility: ['flexible'],
+    'thermal conductivity': ['conducts heat', 'heat conductivity', 'conducts heat well'],
+    'electrical conductivity': ['conducts electricity', 'electrical conductivity', 'conductivity'],
+    density: [],
+    magnetism: ['magnetic'],
+    transparency: ['transparent'],
+    brittleness: ['brittle'],
+    'being waterproof': ['waterproof'],
+  };
 
   /* ---------- diagrams ---------- */
   const conceptSvg = () => `<svg viewBox="0 0 344 200" width="344" height="200" xmlns="http://www.w3.org/2000/svg" font-family="inherit" font-size="12" font-weight="700">
@@ -122,10 +136,9 @@
         finalAnswer: p.def, skill: 'properties',
       };
     }
-    const opt = choice(p.name, PROPS.filter((x) => x.def !== p.def).map((x) => x.name));
     return {
       prompt: `Which property means <b>${p.def}</b>?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(p.name, PROP_ACCEPT[p.name], 'one or two words'),
       hint: `You would test it by: ${p.test}.`,
       working: [`<b>Picture:</b> ${p.test}.`, `That property is <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'properties',
@@ -184,11 +197,10 @@
       ? R.pick(['it is shiny, bends without snapping and lights the bulb in a circuit', 'it conducts heat quickly and can be hammered flat', 'it is shiny, dense and can be pulled into a wire'])
       : R.pick(['it is dull, snaps when you bend it and will not light the bulb', 'it is dull, light and does not conduct heat', 'it shatters when hit and does not conduct electricity']);
     const correct = isMetal ? 'a metal' : 'a non-metal';
-    const opt = choice(correct, [isMetal ? 'a non-metal' : 'a metal'], 2);
     return {
       visual: metalTable(),
       prompt: `Harper tests an unknown solid: <b>${clue}</b>. Is it a metal or a non-metal?`,
-      answer: { type: 'choice', value: opt.value, choices: opt.choices },
+      answer: textAns(isMetal ? 'metal' : 'non-metal', isMetal ? ['a metal'] : ['a non-metal', 'nonmetal', 'non metal'], 'one word'),
       hint: 'Check the clues against the table.',
       working: ['<b>Picture:</b> a shiny spoon (metal) next to a dull plastic ruler (non-metal).', `1. Her clues: ${clue}.`, `2. Those all match the <b>${isMetal ? 'metals' : 'non-metals'}</b> column.`, `So it is <b>${correct}</b>.`],
       finalAnswer: correct, skill: 'metals',

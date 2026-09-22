@@ -54,7 +54,14 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  /** typed synonyms accepted when naming a plant part by itself. */
+  const PART_ACCEPT = {
+    roots: ['root', 'the roots'], stem: ['the stem', 'stalk'], leaves: ['leaf', 'a leaf', 'the leaves'],
+    flower: ['the flower', 'flowers'], seed: ['a seed', 'the seed', 'seeds'], fruit: ['a fruit', 'the fruit'],
+  };
+  const FLOWERPART_ACCEPT = { petal: ['petals', 'a petal'], anther: ['anthers', 'an anther'], stigma: ['a stigma'], ovary: ['an ovary'] };
 
   /* ---------- diagrams ---------- */
   /** the whole plant. highlight = part key (drawn pink); labelled = draw all four labels */
@@ -159,7 +166,7 @@
     }
     return {
       prompt: `Which part of a plant is like <b>${p.pic}</b>?`,
-      answer: ch(p.name, PARTS.map((x) => x.name)),
+      answer: textAns(p.name, PART_ACCEPT[p.name], 'one word'),
       hint: p.job,
       working: [`That part ${p.job}.`, `So it is the <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'parts',
@@ -171,7 +178,7 @@
     return {
       visual: plantSvg(p.key, false),
       prompt: askJob ? 'Look at the plant. What is the job of the <b>pink</b> part?' : 'Look at the plant. What is the <b>pink</b> part called?',
-      answer: askJob ? ch(p.job, PARTS.map((x) => x.job)) : ch(p.name, PARTS.map((x) => x.name)),
+      answer: askJob ? ch(p.job, PARTS.map((x) => x.job)) : textAns(p.name, PART_ACCEPT[p.name], 'one word'),
       hint: askJob ? 'Name the part first, then say its job.' : 'Work up the plant: roots, stem, leaves, flower.',
       working: ['<b>Picture:</b> read the plant from the ground up — roots, stem, leaves, flower.', `The pink part is the <b>${p.name}</b>.`, askJob ? `It ${p.job}.` : `That is the answer.`],
       finalAnswer: askJob ? p.job : p.name, skill: 'parts',
@@ -182,9 +189,9 @@
       { p: 'Which two things does a plant take <b>IN</b> for photosynthesis?', a: 'carbon dioxide and water', w: ['glucose and oxygen', 'oxygen and water', 'glucose and carbon dioxide'] },
       { p: 'Which two things does photosynthesis <b>MAKE</b>?', a: 'glucose and oxygen', w: ['carbon dioxide and water', 'water and oxygen', 'carbon dioxide and glucose'] },
       { p: 'Photosynthesis needs two other things that are <b>not</b> ingredients. What are they?', a: 'light and chlorophyll', w: ['soil and warmth', 'oxygen and minerals', 'water and soil'] },
-      { p: 'Where in the plant does most photosynthesis happen?', a: 'in the chloroplasts inside the leaves', w: ['in the roots', 'in the flower', 'in the stem'] },
-      { p: 'Which gas do plants give out while they are photosynthesising?', a: 'oxygen', w: ['carbon dioxide', 'nitrogen', 'hydrogen'] },
-      { p: 'Where does the plant get the <b>water</b> for photosynthesis?', a: 'the roots take it up from the soil', w: ['it makes water in the leaves', 'it takes it out of the air through the flower', 'it gets it from the sunlight'] },
+      { p: 'Where in the plant does most photosynthesis happen?', a: 'in the chloroplasts inside the leaves', w: ['in the roots', 'in the flower', 'in the stem'], short: 'chloroplasts', shortAccept: ['in the chloroplasts', 'the chloroplasts', 'chloroplast'] },
+      { p: 'Which gas do plants give out while they are photosynthesising?', a: 'oxygen', w: ['carbon dioxide', 'nitrogen', 'hydrogen'], short: 'oxygen', shortAccept: [] },
+      { p: 'Where does the plant get the <b>water</b> for photosynthesis?', a: 'the roots take it up from the soil', w: ['it makes water in the leaves', 'it takes it out of the air through the flower', 'it gets it from the sunlight'], short: 'roots', shortAccept: ['the roots', 'from the roots'] },
       { p: 'Where does the plant get the <b>carbon dioxide</b>?', a: 'from the air, through tiny holes in the leaves', w: ['from the soil, through the roots', 'from the water it drinks', 'from the sunlight'] },
       { p: 'What does the plant do with the <b>glucose</b> it makes?', a: 'uses it for energy and to build new parts, and stores the rest as starch', w: ['breathes it out again', 'sends it back into the soil', 'turns it into sunlight'] },
     ];
@@ -192,7 +199,7 @@
     return {
       visual: level === 1 ? photoSvg() : undefined,
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Say the equation: carbon dioxide + water → glucose + oxygen (with light and chlorophyll).',
       working: ['<b>Picture:</b> the leaf is a tiny food factory running on sunlight.', '<b>carbon dioxide + water → glucose + oxygen</b>', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'photosynthesis',
@@ -200,16 +207,16 @@
   }
   function photoDiagram(level) {
     const items = [
-      { q: 'Which arrow shows something going <b>IN</b> to the leaf?', a: 'carbon dioxide', w: ['oxygen', 'glucose', 'starch'] },
-      { q: 'Which of these comes <b>OUT</b> of the leaf?', a: 'oxygen', w: ['carbon dioxide', 'water', 'minerals'] },
+      { q: 'Which arrow shows something going <b>IN</b> to the leaf?', a: 'carbon dioxide', w: ['oxygen', 'glucose', 'starch'], short: 'carbon dioxide', shortAccept: ['co2'] },
+      { q: 'Which of these comes <b>OUT</b> of the leaf?', a: 'oxygen', w: ['carbon dioxide', 'water', 'minerals'], short: 'oxygen', shortAccept: [] },
       { q: 'The diagram shows light going into the leaf. Is light an <b>ingredient</b> that gets used up?', a: 'No — light is the energy that makes the reaction happen', w: ['Yes, light is one of the two ingredients', 'Yes, light turns into glucose', 'No, light does nothing at all'] },
-      { q: 'What is the green chemical in the leaf that traps the light called?', a: 'chlorophyll', w: ['glucose', 'chloroplast juice', 'carbon dioxide'] },
+      { q: 'What is the green chemical in the leaf that traps the light called?', a: 'chlorophyll', w: ['glucose', 'chloroplast juice', 'carbon dioxide'], short: 'chlorophyll', shortAccept: [] },
     ];
     const f = R.pick(items);
     return {
       visual: photoSvg(),
       prompt: f.q,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Blue arrows go in, green arrows come out.',
       working: ['<b>Picture:</b> a factory — raw materials in on the left, products out on the right.', 'IN: carbon dioxide and water. OUT: glucose and oxygen. Light and chlorophyll make it happen.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'photosynthesis',
@@ -249,7 +256,7 @@
     if (form === 2) {
       return {
         prompt: `Which tubes carry <b>${t.carries}</b>?`,
-        answer: ch(t.name, TUBES.map((x) => x.name).concat(['veins', 'stomata'])),
+        answer: textAns(t.name, t.name === 'xylem' ? ['the xylem'] : ['the phloem'], 'one word'),
         hint: '"Xylem" and "water" both have an x-ish, up-the-tree feel — water goes UP in the xylem.',
         working: [`<b>Picture:</b> ${t.pic}.`, `Those are the <b>${t.name}</b>.`],
         finalAnswer: t.name, skill: 'transport',
@@ -269,7 +276,7 @@
     return {
       visual: flowerSvg(f.key, false),
       prompt: askJob ? 'Look at the flower. What does the <b>ringed</b> part do?' : 'Look at the flower. What is the <b>ringed</b> part called?',
-      answer: askJob ? ch(f.job, FLOWERPARTS.map((x) => x.job)) : ch(f.name, FLOWERPARTS.map((x) => x.name)),
+      answer: askJob ? ch(f.job, FLOWERPARTS.map((x) => x.job)) : textAns(f.name, FLOWERPART_ACCEPT[f.name], 'one word'),
       hint: askJob ? 'Name the part first, then say its job.' : 'Petals on the outside, anthers on the stalks that make pollen, stigma on top of the middle, ovary at the bottom.',
       working: ['<b>Picture:</b> the flower is a landing pad (petals), a pollen factory (anthers), a sticky catcher (stigma) and a seed nursery (ovary).', `The ringed part is the <b>${f.name}</b>, and it ${f.job}.`],
       finalAnswer: askJob ? f.job : f.name, skill: 'flower',
@@ -279,14 +286,14 @@
     const forms = [
       { p: 'What is <b>pollination</b>?', a: 'moving pollen from an anther to a stigma', w: ['a seed growing into a new plant', 'a seed being carried away from the parent plant', 'a leaf making food from sunlight'] },
       { p: 'Why do many flowers have big bright petals and sweet nectar?', a: 'To attract insects and birds, which then carry the pollen away on their bodies', w: ['To catch more sunlight for photosynthesis', 'To scare off animals that would eat them', 'To collect rainwater'] },
-      { p: 'Grass flowers are small, dull and have no scent, but they make masses of light pollen. How are they pollinated?', a: 'by the wind', w: ['by insects', 'by birds', 'by water'] },
-      { p: 'In Aotearoa, tūī and bellbirds visit kōwhai and flax flowers for nectar. What job are they doing for the plant?', a: 'pollinating it — pollen sticks to their heads and is carried to the next flower', w: ['eating the seeds so new plants grow', 'protecting it from insects', 'watering it'] },
+      { p: 'Grass flowers are small, dull and have no scent, but they make masses of light pollen. How are they pollinated?', a: 'by the wind', w: ['by insects', 'by birds', 'by water'], short: 'wind', shortAccept: ['by the wind', 'the wind'] },
+      { p: 'In Aotearoa, tūī and bellbirds visit kōwhai and flax flowers for nectar. What job are they doing for the plant?', a: 'pollinating it — pollen sticks to their heads and is carried to the next flower', w: ['eating the seeds so new plants grow', 'protecting it from insects', 'watering it'], short: 'pollinating it', shortAccept: ['pollination', 'pollinating', 'they pollinate it'] },
       { p: 'What is the difference between <b>pollination</b> and <b>seed dispersal</b>?', a: 'Pollination moves pollen between flowers; dispersal moves the finished seeds away from the parent', w: ['They are two words for the same thing', 'Pollination happens in the roots and dispersal in the leaves', 'Dispersal happens first, then pollination'] },
     ];
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a few words') : ch(f.a, f.w, 4),
       hint: 'Pollination = pollen moves. Dispersal = seeds move.',
       working: ['<b>Picture:</b> pollen is the post; the insect or the wind is the postie.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'pollination',
@@ -297,7 +304,7 @@
     if (R.chance(0.55)) {
       return {
         prompt: `A seed is <b>${d.clue}</b>. How is it spread?`,
-        answer: ch(d.how, ['wind', 'animals', 'water', 'exploding']),
+        answer: textAns(d.how, d.how === 'exploding' ? ['pods exploding', 'the pod explodes'] : [`by ${d.how}`], 'one word'),
         hint: 'Match the shape of the seed to the thing that could move it.',
         working: [`<b>Picture:</b> ${d.ex}.`, `Being ${d.clue} only makes sense if it travels by <b>${d.how}</b>.`],
         finalAnswer: d.how, skill: 'dispersal',

@@ -80,6 +80,20 @@
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each form of energy, used wherever she has to type the
+   *  name herself instead of picking it from a list. */
+  const FORM_ACCEPT = {
+    kinetic: ['kinetic energy'],
+    'gravitational potential': ['gravitational potential energy', 'potential energy', 'gravitational energy', 'gpe'],
+    elastic: ['elastic energy', 'elastic potential energy', 'elastic potential'],
+    chemical: ['chemical energy'],
+    thermal: ['thermal energy', 'heat energy', 'heat'],
+    light: ['light energy'],
+    sound: ['sound energy'],
+    electrical: ['electrical energy', 'electric energy', 'electric'],
+    nuclear: ['nuclear energy'],
+  };
 
   /* ---------- diagrams ---------- */
   function chainSvg(chain, blankIndex, title) {
@@ -128,10 +142,9 @@
   /* ---------- question makers ---------- */
   function formFromDesc() {
     const f = R.pick(FORMS);
-    const c = choice(f.name, NAMES);
     return {
       prompt: `Which form of energy is <b>${f.desc}</b>?`,
-      answer: ans(c),
+      answer: textAns(f.name, FORM_ACCEPT[f.name], 'one or two words'),
       hint: `Think of ${f.pic}.`,
       working: [`<b>Picture:</b> ${f.pic}.`, `That is <b>${f.name} energy</b>: ${f.desc}.`],
       finalAnswer: `${f.name} energy`, skill: 'forms',
@@ -139,10 +152,9 @@
   }
   function storeQ() {
     const s = R.pick(STORES);
-    const c = choice(s.form, NAMES);
     return {
       prompt: `What energy is stored in <b>${s.item}</b>?`,
-      answer: ans(c),
+      answer: textAns(s.form, FORM_ACCEPT[s.form], 'one or two words'),
       hint: 'Is it moving, is it high up, is it stretched, is it food/fuel, or is it hot?',
       working: [
         '<b>Picture:</b> ask the four questions — moving? high up? stretched? fuel or food?',
@@ -201,15 +213,27 @@
       finalAnswer: `${want} energy`, skill: 'useful',
     };
   }
+  const CONSERVATION_TEXT = [
+    { p: 'What is energy measured in?', a: 'joules', accept: ['joule', 'j', 'joules (j)'], full: 'joules (J)' },
+  ];
+  const CONSERVATION_CHOICE = [
+    { p: 'What does the <b>law of conservation of energy</b> say?', a: 'Energy is never made or destroyed — it is only transferred', w: ['Energy is used up and disappears', 'Energy can be made from nothing', 'Energy always turns into light'] },
+    { p: 'A light bulb "loses" energy as heat. Where has that energy really gone?', a: 'Into the air around it as thermal energy', w: ['It has been destroyed', 'It has disappeared into the wire', 'It has turned back into electricity'] },
+    { p: 'Can you create brand new energy?', a: 'No — you can only transfer energy that is already there', w: ['Yes, a battery makes new energy', 'Yes, the sun makes new energy', 'Yes, if you use a generator'] },
+    { p: 'A phone battery goes flat. What has happened to the energy?', a: 'It has been transferred to light, sound and heat', w: ['It has been destroyed', 'It leaked out of the case', 'It turned into mass'] },
+    { p: 'In every energy transfer, some energy is wasted. What is it usually wasted as?', a: 'heat (and sometimes sound)', w: ['light', 'chemical energy', 'nuclear energy'] },
+  ];
   function conservationQ() {
-    const q = R.pick([
-      { p: 'What does the <b>law of conservation of energy</b> say?', a: 'Energy is never made or destroyed — it is only transferred', w: ['Energy is used up and disappears', 'Energy can be made from nothing', 'Energy always turns into light'] },
-      { p: 'A light bulb "loses" energy as heat. Where has that energy really gone?', a: 'Into the air around it as thermal energy', w: ['It has been destroyed', 'It has disappeared into the wire', 'It has turned back into electricity'] },
-      { p: 'What is energy measured in?', a: 'joules (J)', w: ['newtons (N)', 'watts per second', 'kilograms (kg)'] },
-      { p: 'Can you create brand new energy?', a: 'No — you can only transfer energy that is already there', w: ['Yes, a battery makes new energy', 'Yes, the sun makes new energy', 'Yes, if you use a generator'] },
-      { p: 'A phone battery goes flat. What has happened to the energy?', a: 'It has been transferred to light, sound and heat', w: ['It has been destroyed', 'It leaked out of the case', 'It turned into mass'] },
-      { p: 'In every energy transfer, some energy is wasted. What is it usually wasted as?', a: 'heat (and sometimes sound)', w: ['light', 'chemical energy', 'nuclear energy'] },
-    ]);
+    if (R.chance(0.5)) {
+      const q = R.pick(CONSERVATION_TEXT);
+      return {
+        prompt: q.p, answer: textAns(q.a, q.accept, 'one word'),
+        hint: 'Energy never vanishes. It just spreads out, usually as heat.',
+        working: ['<b>Picture:</b> energy is like pocket money — you can spend it or move it, but you cannot make it appear from nothing.', `Answer: <b>${q.full}</b>.`],
+        finalAnswer: q.full, skill: 'conservation',
+      };
+    }
+    const q = R.pick(CONSERVATION_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       prompt: q.p, answer: ans(c),
@@ -273,14 +297,26 @@
       finalAnswer: `${total - useful} J wasted as ${d.wasted} energy`, skill: 'efficiency',
     };
   }
+  const NZ_TEXT = [
+    { p: 'In a hydro dam, what energy does the water have while it is still held up behind the wall?', a: 'gravitational potential', full: 'gravitational potential energy' },
+    { p: 'What kind of energy does the steam at Wairākei geothermal station start as?', a: 'thermal', full: 'thermal energy' },
+    { p: 'A wind turbine transfers the energy of moving air into electricity. What is the energy of moving air called?', a: 'kinetic', full: 'kinetic energy' },
+    { p: 'Solar panels on a roof transfer which energy into electrical energy?', a: 'light', full: 'light energy' },
+  ];
+  const NZ_CHOICE = [
+    { p: 'Where does most of New Zealand\'s electricity come from?', a: 'Hydro (falling water)', w: ['Coal', 'Nuclear power', 'Petrol'] },
+  ];
   function nzEnergy() {
-    const q = R.pick([
-      { p: 'Where does most of New Zealand\'s electricity come from?', a: 'Hydro (falling water)', w: ['Coal', 'Nuclear power', 'Petrol'] },
-      { p: 'In a hydro dam, what energy does the water have while it is still held up behind the wall?', a: 'gravitational potential', w: ['kinetic', 'electrical', 'chemical'] },
-      { p: 'What kind of energy does the steam at Wairākei geothermal station start as?', a: 'thermal', w: ['chemical', 'nuclear', 'elastic'] },
-      { p: 'A wind turbine transfers the energy of moving air into electricity. What is the energy of moving air called?', a: 'kinetic', w: ['thermal', 'elastic', 'chemical'] },
-      { p: 'Solar panels on a roof transfer which energy into electrical energy?', a: 'light', w: ['sound', 'chemical', 'nuclear'] },
-    ]);
+    if (R.chance(0.5)) {
+      const q = R.pick(NZ_TEXT);
+      return {
+        prompt: q.p, answer: textAns(q.a, FORM_ACCEPT[q.a], 'one or two words'),
+        hint: 'Aotearoa uses a lot of falling water, steam from underground, and wind.',
+        working: ['<b>Picture:</b> water high in the lake → rushing down the pipe → spinning the turbine → electricity.', `Answer: <b>${q.full}</b>.`],
+        finalAnswer: q.full, skill: 'nz',
+      };
+    }
+    const q = R.pick(NZ_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       prompt: q.p, answer: ans(c),

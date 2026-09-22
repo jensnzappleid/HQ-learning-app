@@ -55,6 +55,16 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms for the six vocabulary words in this topic. */
+  const TERM_ACCEPT = {
+    'structural adaptation': ['structural', 'a structural adaptation'],
+    'behavioural adaptation': ['behavioural', 'a behavioural adaptation', 'behavioral adaptation', 'behavioral'],
+    camouflage: [],
+    migration: ['migrate', 'migrating'],
+    hibernation: ['hibernate', 'hibernating'],
+    habitat: ['a habitat'],
+  };
 
   /* ---------- diagrams ---------- */
   /** a moth shape */
@@ -128,7 +138,7 @@
     const a = R.pick(ADAPT);
     return {
       prompt: `<b>${cap(a.animal)}</b>: ${a.feature}. Is that a <b>structural</b> or a <b>behavioural</b> adaptation?`,
-      answer: ch(a.type, ['structural', 'behavioural'], 2),
+      answer: textAns(a.type, a.type === 'structural' ? ['a structural adaptation'] : ['a behavioural adaptation', 'behavioral'], 'one word'),
       hint: 'Structural = a body part it is BUILT with. Behavioural = something it DOES.',
       working: ['<b>Picture:</b> structural is the tool in your hand; behavioural is the way you use it.', `1. Is "${a.feature}" a body part, or an action? <b>${a.type === 'structural' ? 'A body part.' : 'An action.'}</b>`, `So it is a <b>${a.type}</b> adaptation.`],
       finalAnswer: a.type, skill: 'type',
@@ -167,7 +177,7 @@
     }
     return {
       prompt: `Which word means "<b>${t.mean}</b>"?`,
-      answer: ch(t.word, TERMS.map((x) => x.word)),
+      answer: textAns(t.word, TERM_ACCEPT[t.word], 'one or two words'),
       hint: `Think of ${t.ex}.`,
       working: [`<b>Example:</b> ${t.ex}.`, `That word is <b>${t.word}</b>.`],
       finalAnswer: t.word, skill: 'words',
@@ -235,12 +245,12 @@
       { p: 'Why is flying "expensive" for a bird?', a: 'Wings and flight muscles take a huge amount of energy to build and to use', w: ['Feathers wear out too fast', 'Flying makes birds cold', 'Flying stops birds laying eggs'] },
       { p: 'Why is being flightless such a problem for a kiwi <b>now</b>?', a: 'Introduced mammals like stoats hunt on the ground, and the kiwi cannot fly away', w: ['The kiwi cannot find its food any more', 'Flightless birds cannot lay eggs', 'The bush has become too cold'] },
       { p: 'A kākāpō freezes and stands very still when it is frightened. Why did that behaviour once work, but not now?', a: 'It hid the bird from hawks that hunt by sight, but stoats and cats hunt by smell', w: ['It used to make the bird invisible', 'Standing still used to scare predators away', 'Kākāpō used to be much faster'] },
-      { p: 'Which NZ bird is the world\'s heaviest parrot, and cannot fly?', a: 'the kākāpō', w: ['the kea', 'the tūī', 'the kererū'] },
+      { p: 'Which NZ bird is the world\'s heaviest parrot, and cannot fly?', a: 'the kākāpō', w: ['the kea', 'the tūī', 'the kererū'], short: 'kakapo', shortAccept: ['the kākāpō', 'the kakapo', 'kākāpō'] },
     ];
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'For millions of years, the only predators here hunted from the air, by sight.',
       working: ['<b>Picture:</b> a village with no burglars — nobody bothers locking the doors. Then burglars arrive.', 'NZ birds evolved with <b>no ground predators</b>, so flying and hiding stopped being worth the energy.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'flightless',
@@ -250,15 +260,15 @@
     const forms = [
       { p: 'What is <b>migration</b>?', a: 'travelling a long way each year to follow food or warmth', w: ['a deep winter sleep to save energy', 'changing colour to match the background', 'growing a thicker coat for winter'] },
       { p: 'What is <b>hibernation</b>?', a: 'a deep winter sleep that saves energy when food is scarce', w: ['travelling a long way each year to follow food', 'coming out only at night', 'storing fat in a hump'] },
-      { p: 'A godwit (kuaka) flies from New Zealand to Alaska and back every year. What is that called?', a: 'migration', w: ['hibernation', 'camouflage', 'photosynthesis'] },
-      { p: 'A hedgehog sleeps through the coldest part of winter. What is that called?', a: 'hibernation', w: ['migration', 'camouflage', 'adaptation to light'] },
+      { p: 'A godwit (kuaka) flies from New Zealand to Alaska and back every year. What is that called?', a: 'migration', w: ['hibernation', 'camouflage', 'photosynthesis'], short: 'migration', shortAccept: [] },
+      { p: 'A hedgehog sleeps through the coldest part of winter. What is that called?', a: 'hibernation', w: ['migration', 'camouflage', 'adaptation to light'], short: 'hibernation', shortAccept: ['hibernate'] },
       { p: 'Migration and hibernation are both solutions to the same problem. What is it?', a: 'surviving a time of year when food runs short', w: ['avoiding being seen by predators', 'keeping the skin damp', 'finding a mate'] },
       { p: 'Are migration and hibernation structural or behavioural adaptations?', a: 'behavioural — they are things the animal does', w: ['structural — they are body parts', 'neither, they are habitats', 'both at the same time'] },
     ];
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'Migration = a long trip. Hibernation = a long sleep. Both dodge the hungry season.',
       working: ['<b>Picture:</b> when winter comes you can either go on holiday somewhere warm (migrate) or stay in bed (hibernate).', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'migration',

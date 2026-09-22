@@ -59,6 +59,10 @@
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const list = (a) => (a.length === 0 ? 'nothing' : a.length === 1 ? a[0] : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each unit's actual vocabulary term, used wherever she has to
+   *  type the term herself instead of picking it from a list. */
+  const DECOMPOSER_ACCEPT = { fungi: ['fungus', 'a mushroom'], bacteria: ['a bacterium', 'germs'], earthworms: ['worms', 'earthworm', 'a worm'] };
 
   /* ---------- diagrams ---------- */
   /** a straight arrow with a triangle head */
@@ -154,7 +158,7 @@
         : R.pick(['a kiwi', 'a stoat', 'a possum', 'a weta']);
     return {
       prompt: `In a food chain, what is <b>${thing}</b>?`,
-      answer: ch(r.role, ROLES.map((x) => x.role)),
+      answer: textAns(r.role, [], 'one word'),
       hint: 'Producers make their own food. Consumers eat things. Decomposers clean up dead things.',
       working: ['<b>Picture:</b> a solar panel (producer), a customer (consumer), a clean-up crew (decomposer).', `${cap(thing)} ${r.mean}.`, `So it is a <b>${r.role}</b>.`],
       finalAnswer: r.role, skill: 'roles',
@@ -166,7 +170,7 @@
       const a = R.pick(d.ex);
       return {
         prompt: `A <b>${a}</b> eats ${d.mean.replace('eats ', '')}. What kind of consumer is it?`,
-        answer: ch(d.diet, DIETS.map((x) => x.diet)),
+        answer: textAns(d.diet, [], 'one word'),
         hint: 'Herb = plant. Carn = meat. Omni = everything.',
         working: ['<b>Picture:</b> herb = herbs = plants; carne = meat (like carnival food); omni = all.', `A ${a} ${d.mean}.`, `So it is a <b>${d.diet}</b>.`],
         finalAnswer: d.diet, skill: 'diets',
@@ -192,8 +196,8 @@
       };
     }
     return {
-      prompt: `Which of these is a <b>decomposer</b>?`,
-      answer: ch(d.name, DECOMPOSERS.map((x) => x.name).concat(['a stoat', 'a rātā tree'])),
+      prompt: `Name one kind of <b>decomposer</b>.`,
+      answer: textAns(d.name, DECOMPOSER_ACCEPT[d.name], 'one word'),
       hint: 'A decomposer feeds on things that are already dead.',
       working: ['<b>Picture:</b> the clean-up crew.', `${cap(d.name)} ${d.how}.`, `So <b>${d.name}</b> is the decomposer.`],
       finalAnswer: d.name, skill: 'decomposers',
@@ -262,8 +266,17 @@
     const forms = [
       { p: 'What does an arrow in a food chain actually mean?', a: 'energy is passed on to whatever the arrow points at', w: ['the animal is running that way', 'this one hunts that one down', 'they live in the same place'] },
       { p: `In the chain shown, which way does the <b>energy</b> travel?`, a: 'from left to right, in the same direction as the arrows', w: ['from right to left, back down the chain', 'both ways at once', 'the arrows do not show energy at all'] },
-      { p: 'Where does the energy in <b>every</b> food chain come from in the first place?', a: 'the Sun', w: ['the soil', 'the decomposers', 'water'] },
     ];
+    if (R.chance(1 / 3)) {
+      return {
+        visual: chainSvg(c, -1),
+        prompt: 'Where does the energy in <b>every</b> food chain come from in the first place?',
+        answer: textAns('sun', ['the sun', 'sunlight'], 'one word'),
+        hint: 'Say the arrow out loud as the words "is eaten by".',
+        working: ['<b>Picture:</b> the arrow is the energy walking from one animal to the next.', `Read it: ${c[0]} <b>is eaten by</b> ${c[1]}…`, 'So the answer is <b>the Sun</b>.'],
+        finalAnswer: 'the Sun', skill: 'chains',
+      };
+    }
     const f = R.pick(forms);
     return {
       visual: chainSvg(c, -1),
@@ -304,7 +317,7 @@
     return {
       visual: webSvg(null),
       prompt: `In this bush food web, what kind of feeder is the <b>${n}</b>?`,
-      answer: ch(right, ['producer', 'herbivore', 'carnivore', 'omnivore'], 4),
+      answer: textAns(right, [], 'one word'),
       hint: 'Look at what the arrows into it come from: green boxes are plants, orange boxes are animals.',
       working: ['<b>Picture:</b> green box = plant, orange box = animal.', w.role === 'producer' ? `${cap(n)} makes its own food, so it is a <b>producer</b>.` : `${cap(n)} eats ${list(w.eats)}.`, `So it is a <b>${right}</b>.`],
       finalAnswer: right, skill: 'webs',

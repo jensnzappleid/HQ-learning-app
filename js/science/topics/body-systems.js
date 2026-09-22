@@ -80,6 +80,42 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each unit's actual vocabulary term, used wherever she has to
+   *  type the term herself instead of picking it from a list. */
+  const DIGEST_ACCEPT = {
+    mouth: [], oesophagus: ['esophagus', 'food pipe', 'gullet', 'the oesophagus'], stomach: ['the stomach'],
+    'small intestine': ['the small intestine'], 'large intestine': ['the large intestine'],
+  };
+  const ENZYME_INTO_ACCEPT = {
+    sugar: ['glucose'], 'amino acids': ['amino acid'],
+    'fatty acids and glycerol': ['fatty acid and glycerol', 'glycerol and fatty acids', 'fatty acids & glycerol'],
+  };
+  const CIRC_ACCEPT = { artery: ['arteries', 'an artery'], vein: ['veins', 'a vein'], capillary: ['capillaries', 'a capillary', 'in the capillaries'] };
+  const BLOOD_ACCEPT = {
+    'red blood cells': ['red blood cell'], 'white blood cells': ['white blood cell'],
+    platelets: ['platelet'], plasma: ['the plasma'],
+  };
+  const BREATHE_ACCEPT = {
+    trachea: ['windpipe', 'the trachea'], bronchi: ['the bronchi', 'bronchus'], lungs: ['the lungs'],
+    alveoli: ['air sacs', 'the alveoli', 'alveolus'], diaphragm: ['the diaphragm'], ribs: ['the ribs'],
+  };
+  const NERVE_ACCEPT = {
+    brain: ['the brain'], 'spinal cord': ['the spinal cord'], nerves: ['nerve', 'the nerves'],
+    receptor: ['a receptor', 'receptor cells', 'the receptor'], effector: ['an effector', 'the effector'],
+  };
+  const SENSE_ORGAN_ACCEPT = { eyes: ['eye', 'the eyes'], ears: ['ear', 'the ears'], nose: ['the nose'], tongue: ['the tongue'], skin: ['the skin'] };
+  const FLOW_ACCEPT = { lungs: ['the lungs'], heart: ['the heart'], body: ['the body'] };
+  const CHAIN_ACCEPT = {
+    stimulus: ['a stimulus', 'the stimulus'], receptor: ['a receptor', 'the receptor', 'receptor cells'],
+    nerve: ['a nerve', 'the nerve'], brain: ['the brain'], response: ['a response', 'the response'],
+  };
+  const SYSTEM_ACCEPT = {
+    'the digestive system': ['digestive system'],
+    'the breathing system': ['breathing system', 'respiratory system', 'the respiratory system'],
+    'the circulatory system': ['circulatory system'],
+    'the nervous system': ['nervous system'],
+  };
 
   /* ---------- diagrams ---------- */
   /** the gut, top to bottom. highlight = organ name (everything else greys out); labelled = draw all five labels */
@@ -226,7 +262,7 @@
     const from = forward ? DIGEST[i] : DIGEST[i + 1];
     return {
       prompt: `Food travels: mouth → oesophagus → stomach → small intestine → large intestine. Which part does food reach <b>${forward ? 'straight after' : 'just before'}</b> the <b>${from.name}</b>?`,
-      answer: ch(want.name, DIGEST.map((d) => d.name)),
+      answer: textAns(want.name, DIGEST_ACCEPT[want.name], 'body part'),
       hint: 'Say the order out loud: mouth, oesophagus, stomach, small intestine, large intestine.',
       working: ['<b>Picture:</b> one long tube from your mouth to the toilet.', `Find the ${from.name} in the order, then step ${forward ? 'forwards' : 'backwards'} one.`, `That gives the <b>${want.name}</b>.`],
       finalAnswer: want.name, skill: 'digest',
@@ -238,7 +274,7 @@
     return {
       visual: digestSvg(p.name, false),
       prompt: askJob ? 'Look at the gut. What happens to the food in the <b>pink</b> part?' : 'Look at the gut. What is the <b>pink</b> part called?',
-      answer: askJob ? ch(p.job, DIGEST.map((d) => d.job)) : ch(p.name, DIGEST.map((d) => d.name)),
+      answer: askJob ? ch(p.job, DIGEST.map((d) => d.job)) : textAns(p.name, DIGEST_ACCEPT[p.name], 'body part'),
       hint: askJob ? 'Work out which organ it is first, then remember its job.' : 'Follow the tube down from the mouth and count the parts.',
       working: [`<b>Picture:</b> the tube runs mouth → oesophagus → stomach → small intestine → large intestine.`, `The pink part is the <b>${p.name}</b>.`, askJob ? `It <b>${p.job}</b>.` : `So the answer is the ${p.name}.`],
       finalAnswer: askJob ? p.job : p.name, skill: 'digest',
@@ -250,7 +286,7 @@
     if (form === 1) {
       return {
         prompt: `Which enzyme breaks down <b>${e.food}</b>?`,
-        answer: ch(e.name, ENZYMES.map((x) => x.name).concat(['bile'])),
+        answer: textAns(e.name, [], 'one word'),
         hint: 'Two of the three names tell you the food: amylase → starch, lipase → fat (think lipids).',
         working: ['<b>Picture:</b> an enzyme is a pair of scissors that only cuts one kind of food.', `${e.food.charAt(0).toUpperCase() + e.food.slice(1)} is cut up by <b>${e.name}</b>.`],
         finalAnswer: e.name, skill: 'enzymes',
@@ -259,7 +295,7 @@
     if (form === 2) {
       return {
         prompt: `<b>${e.name.charAt(0).toUpperCase() + e.name.slice(1)}</b> breaks ${e.food} down into what?`,
-        answer: ch(e.into, ENZYMES.map((x) => x.into).concat(['water and carbon dioxide'])),
+        answer: textAns(e.into, ENZYME_INTO_ACCEPT[e.into], 'one or two words'),
         hint: 'Big food molecule in, small molecules out.',
         working: ['<b>Picture:</b> a Lego model being pulled apart into single bricks.', `${e.name} cuts <b>${e.food}</b> into <b>${e.into}</b>.`],
         finalAnswer: e.into, skill: 'enzymes',
@@ -273,14 +309,26 @@
       finalAnswer: 'So it is small enough to pass through the gut wall into the blood', skill: 'enzymes',
     };
   }
+  const ABSORB_TEXT = [
+    { p: 'Where is digested food <b>absorbed</b> into the blood?', a: 'small intestine', accept: ['the small intestine'], full: 'the small intestine', r: 'Its walls are covered in millions of tiny villi that reach into the food.' },
+    { p: 'What does the <b>large intestine</b> take back out of the leftovers?', a: 'water', accept: [], full: 'water', r: 'That is why you get thirsty if you have an upset tummy.' },
+  ];
+  const ABSORB_CHOICE = [
+    { p: 'The small intestine is lined with millions of tiny finger-shaped bumps. What are they for?', a: 'They give a huge surface for absorbing food', w: ['They grip the food so it cannot slide out', 'They make acid', 'They chew the food'], r: 'More surface means more food absorbed each second.' },
+    { p: 'Where does digested food go once it is absorbed?', a: 'into the blood, which carries it to every cell', w: ['back into the stomach', 'into the lungs to be breathed out', 'straight into the muscles through the skin'], r: 'The blood is the delivery service.' },
+  ];
   function absorbQ(level) {
-    const forms = [
-      { p: 'Where is digested food <b>absorbed</b> into the blood?', a: 'the small intestine', w: ['the stomach', 'the mouth', 'the large intestine'], r: 'Its walls are covered in millions of tiny villi that reach into the food.' },
-      { p: 'The small intestine is lined with millions of tiny finger-shaped bumps. What are they for?', a: 'They give a huge surface for absorbing food', w: ['They grip the food so it cannot slide out', 'They make acid', 'They chew the food'], r: 'More surface means more food absorbed each second.' },
-      { p: 'What does the <b>large intestine</b> take back out of the leftovers?', a: 'water', w: ['oxygen', 'protein', 'acid'], r: 'That is why you get thirsty if you have an upset tummy.' },
-      { p: 'Where does digested food go once it is absorbed?', a: 'into the blood, which carries it to every cell', w: ['back into the stomach', 'into the lungs to be breathed out', 'straight into the muscles through the skin'], r: 'The blood is the delivery service.' },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(0.5)) {
+      const f = R.pick(ABSORB_TEXT);
+      return {
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one or two words'),
+        hint: f.r,
+        working: ['<b>Picture:</b> the small intestine is a long velvet hose — the velvet is millions of villi.', f.r, `Answer: <b>${f.full}</b>.`],
+        finalAnswer: f.full, skill: 'absorb',
+      };
+    }
+    const f = R.pick(ABSORB_CHOICE);
     return {
       prompt: f.p,
       answer: ch(f.a, f.w),
@@ -299,16 +347,28 @@
       finalAnswer: p.job, skill: 'circulation',
     };
   }
+  const VESSEL_TEXT = [
+    { p: 'Which blood vessel carries blood <b>away from</b> the heart?', a: 'artery', accept: CIRC_ACCEPT.artery, r: 'A for Artery, A for Away.' },
+    { p: 'Which blood vessel carries blood <b>back to</b> the heart?', a: 'vein', accept: CIRC_ACCEPT.vein, r: 'Veins have valves so blood cannot slip backwards.' },
+    { p: 'Which blood vessel has a wall only <b>one cell thick</b>?', a: 'capillary', accept: CIRC_ACCEPT.capillary, r: 'It has to be thin so oxygen can step straight across into the cell.' },
+    { p: 'Where does the swap of oxygen and food into the cells actually happen?', a: 'capillaries', accept: ['the capillaries', 'in the capillaries', 'capillary'], r: 'Only the capillary wall is thin enough.' },
+  ];
+  const VESSEL_CHOICE = [
+    { p: 'Why do <b>arteries</b> have thick muscly walls?', a: 'The blood in them is at high pressure straight from the heart', w: ['They carry more blood than veins', 'They are closer to the skin', 'They have to hold valves inside'], r: 'The heart squeezes hard, so the pipe must be strong.' },
+    { p: 'Why do <b>veins</b> have valves inside them?', a: 'To stop the blood sliding backwards', w: ['To speed the blood up', 'To take oxygen out of the blood', 'To make new blood cells'], r: 'The pressure is low by the time blood gets back, so it needs one-way gates.' },
+  ];
   function vesselQ() {
-    const forms = [
-      { p: 'Which blood vessel carries blood <b>away from</b> the heart?', a: 'artery', w: ['vein', 'capillary'], r: 'A for Artery, A for Away.' },
-      { p: 'Which blood vessel carries blood <b>back to</b> the heart?', a: 'vein', w: ['artery', 'capillary'], r: 'Veins have valves so blood cannot slip backwards.' },
-      { p: 'Which blood vessel has a wall only <b>one cell thick</b>?', a: 'capillary', w: ['artery', 'vein'], r: 'It has to be thin so oxygen can step straight across into the cell.' },
-      { p: 'Why do <b>arteries</b> have thick muscly walls?', a: 'The blood in them is at high pressure straight from the heart', w: ['They carry more blood than veins', 'They are closer to the skin', 'They have to hold valves inside'], r: 'The heart squeezes hard, so the pipe must be strong.' },
-      { p: 'Why do <b>veins</b> have valves inside them?', a: 'To stop the blood sliding backwards', w: ['To speed the blood up', 'To take oxygen out of the blood', 'To make new blood cells'], r: 'The pressure is low by the time blood gets back, so it needs one-way gates.' },
-      { p: 'Where does the swap of oxygen and food into the cells actually happen?', a: 'in the capillaries', w: ['in the arteries', 'in the veins', 'in the heart'], r: 'Only the capillary wall is thin enough.' },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(0.5)) {
+      const f = R.pick(VESSEL_TEXT);
+      return {
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one word'),
+        hint: f.r,
+        working: ['<b>Picture:</b> artery = thick fire hose, vein = floppy hose with gates, capillary = leaky straw.', f.r, `Answer: <b>${f.a}</b>.`],
+        finalAnswer: f.a, skill: 'circulation',
+      };
+    }
+    const f = R.pick(VESSEL_CHOICE);
     return {
       prompt: f.p,
       answer: ch(f.a, f.w, f.w.length + 1),
@@ -330,7 +390,7 @@
     }
     return {
       prompt: `Which part of the blood does this job: <b>${b.job}</b>?`,
-      answer: ch(b.name, BLOOD.map((x) => x.name)),
+      answer: textAns(b.name, BLOOD_ACCEPT[b.name], 'one or two words'),
       hint: `Picture ${b.pic}.`,
       working: [`<b>Picture:</b> ${b.pic}.`, `That is the job of the <b>${b.name}</b>.`],
       finalAnswer: b.name, skill: 'blood',
@@ -343,7 +403,7 @@
     return {
       visual: flowSvg(which, 0),
       prompt: `Follow the arrows round the circulation. What belongs in the <b>dotted box</b>?`,
-      answer: ch(wants[which], ['lungs', 'heart', 'body', 'stomach'], 4),
+      answer: textAns(wants[which], FLOW_ACCEPT[wants[which]], 'one word'),
       hint: 'Blood always goes body → heart → lungs → heart → body.',
       working: ['<b>Picture:</b> a figure-of-eight racetrack with the heart at the crossing point.', 'The order is body → heart → lungs → heart → body.', `The missing box is the <b>${wants[which]}</b>, ${why[which]}.`],
       finalAnswer: wants[which], skill: 'circulation',
@@ -361,7 +421,7 @@
     return {
       visual: flowSvg(null, n),
       prompt: askOx ? 'Look at the arrow marked <b>?</b>. Is that blood full of oxygen or low in oxygen?' : 'Look at the arrow marked <b>?</b>. Where is that blood going <b>to</b>?',
-      answer: askOx ? ch(info.ox, ['low in oxygen', 'full of oxygen', 'it has no oxygen at all'], 3) : ch(info.to, ['lungs', 'heart', 'body'], 3),
+      answer: askOx ? ch(info.ox, ['low in oxygen', 'full of oxygen', 'it has no oxygen at all'], 3) : textAns(info.to, FLOW_ACCEPT[info.to], 'one word'),
       hint: askOx ? 'Blood is only refilled with oxygen at the lungs, and only emptied at the body.' : 'Trace the arrow with your finger from its tail to its point.',
       working: ['<b>Picture:</b> a figure-of-eight racetrack: body → heart → lungs → heart → body.', `That arrow runs from the <b>${info.from}</b> to the <b>${info.to}</b>.`, askOx ? `So the blood is <b>${info.ox}</b> — ${info.why}.` : `So it is going to the <b>${info.to}</b>.`],
       finalAnswer: askOx ? info.ox : info.to, skill: 'circulation',
@@ -380,20 +440,33 @@
     }
     return {
       prompt: `Which part of the breathing system is like <b>${p.pic}</b>?`,
-      answer: ch(p.name, BREATHE.map((q) => q.name)),
+      answer: textAns(p.name, BREATHE_ACCEPT[p.name], 'one word'),
       hint: p.job,
       working: [`That part ${p.job}.`, `So it is the <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'breathing',
     };
   }
+  const GAS_TEXT = [
+    { p: 'Which gas moves <b>from the air sac into the blood</b>?', a: 'oxygen', accept: [] },
+    { p: 'Which gas moves <b>from the blood into the air sac</b>?', a: 'carbon dioxide', accept: ['co2'] },
+  ];
+  const GAS_CHOICE = [
+    { p: 'Why are the walls of the air sacs <b>only one cell thick</b>?', a: 'So gases can cross over quickly', w: ['So the lungs weigh less', 'So germs cannot get in', 'So the sacs can hold more air'] },
+    { p: 'Why are there millions of tiny air sacs instead of two big bags?', a: 'Millions of small sacs give a much bigger surface for swapping gases', w: ['Small sacs are stronger', 'Small sacs warm the air up', 'Big bags would not fit in the chest'] },
+  ];
   function gasSwap(level) {
-    const forms = [
-      { p: 'Which gas moves <b>from the air sac into the blood</b>?', a: 'oxygen', w: ['carbon dioxide', 'nitrogen', 'water vapour'] },
-      { p: 'Which gas moves <b>from the blood into the air sac</b>?', a: 'carbon dioxide', w: ['oxygen', 'nitrogen', 'hydrogen'] },
-      { p: 'Why are the walls of the air sacs <b>only one cell thick</b>?', a: 'So gases can cross over quickly', w: ['So the lungs weigh less', 'So germs cannot get in', 'So the sacs can hold more air'] },
-      { p: 'Why are there millions of tiny air sacs instead of two big bags?', a: 'Millions of small sacs give a much bigger surface for swapping gases', w: ['Small sacs are stronger', 'Small sacs warm the air up', 'Big bags would not fit in the chest'] },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(0.5)) {
+      const f = R.pick(GAS_TEXT);
+      return {
+        visual: alveolusSvg(),
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one word'),
+        hint: 'Fresh air is full of oxygen; the blood coming back is full of carbon dioxide. Each gas moves to where there is less of it.',
+        working: ['<b>Picture:</b> a bunch of tiny grapes with a blood pipe wrapped round them.', 'Oxygen crosses <b>into</b> the blood; carbon dioxide crosses <b>out</b> into the air.', `Answer: <b>${f.a}</b>.`],
+        finalAnswer: f.a, skill: 'gas-exchange',
+      };
+    }
+    const f = R.pick(GAS_CHOICE);
     return {
       visual: alveolusSvg(),
       prompt: f.p,
@@ -421,16 +494,28 @@
       finalAnswer: a, skill: 'breathing',
     };
   }
+  const TOGETHER_TEXT = [
+    { p: 'Which system gets the <b>glucose</b> into the blood?', a: 'digestive system', accept: SYSTEM_ACCEPT['the digestive system'].concat(['the digestive system']), full: 'the digestive system' },
+    { p: 'Which system gets the <b>oxygen</b> into the blood?', a: 'breathing system', accept: SYSTEM_ACCEPT['the breathing system'].concat(['the breathing system']), full: 'the breathing system' },
+    { p: 'Which system <b>delivers</b> the glucose and the oxygen to every cell?', a: 'circulatory system', accept: SYSTEM_ACCEPT['the circulatory system'].concat(['the circulatory system']), full: 'the circulatory system' },
+    { p: 'Releasing energy from glucose inside a cell has a name. What is it?', a: 'respiration', accept: [], full: 'respiration' },
+  ];
+  const TOGETHER_CHOICE = [
+    { p: 'Your cells need two things delivered before they can release energy. What are they?', a: 'glucose and oxygen', w: ['carbon dioxide and water', 'protein and water', 'oxygen and carbon dioxide'] },
+    { p: 'Which two waste products does respiration make, that the blood has to carry away?', a: 'carbon dioxide and water', w: ['oxygen and glucose', 'glucose and water', 'carbon dioxide and oxygen'] },
+  ];
   function togetherQ() {
-    const forms = [
-      { p: 'Your cells need two things delivered before they can release energy. What are they?', a: 'glucose and oxygen', w: ['carbon dioxide and water', 'protein and water', 'oxygen and carbon dioxide'] },
-      { p: 'Which system gets the <b>glucose</b> into the blood?', a: 'the digestive system', w: ['the breathing system', 'the circulatory system', 'the nervous system'] },
-      { p: 'Which system gets the <b>oxygen</b> into the blood?', a: 'the breathing system', w: ['the digestive system', 'the circulatory system', 'the skeletal system'] },
-      { p: 'Which system <b>delivers</b> the glucose and the oxygen to every cell?', a: 'the circulatory system', w: ['the digestive system', 'the breathing system', 'the muscular system'] },
-      { p: 'Releasing energy from glucose inside a cell has a name. What is it?', a: 'respiration', w: ['photosynthesis', 'digestion', 'circulation'] },
-      { p: 'Which two waste products does respiration make, that the blood has to carry away?', a: 'carbon dioxide and water', w: ['oxygen and glucose', 'glucose and water', 'carbon dioxide and oxygen'] },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(0.5)) {
+      const f = R.pick(TOGETHER_TEXT);
+      return {
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one or two words'),
+        hint: 'glucose (from food) + oxygen (from air) → energy, and the blood is the courier.',
+        working: ['<b>Picture:</b> the gut and the lungs are two loading bays; the blood is the courier van; every cell is a house waiting for a delivery.', 'glucose + oxygen → energy + carbon dioxide + water.', `Answer: <b>${f.full}</b>.`],
+        finalAnswer: f.full, skill: 'together',
+      };
+    }
+    const f = R.pick(TOGETHER_CHOICE);
     return {
       prompt: f.p,
       answer: ch(f.a, f.w),
@@ -505,7 +590,7 @@
     }
     return {
       prompt: `Which part of the message system is like <b>${p.pic}</b>?`,
-      answer: ch(p.name, NERVE.map((q) => q.name)),
+      answer: textAns(p.name, NERVE_ACCEPT[p.name], 'one word'),
       hint: p.job,
       working: [`That part is ${p.job}.`, `So it is the <b>${p.name}</b>.`],
       finalAnswer: p.name, skill: 'nervous',
@@ -517,7 +602,7 @@
     return {
       visual: nerveSvg(p.name, false),
       prompt: askJob ? 'Look at the message system. What does the <b>pink</b> part do?' : 'Look at the message system. What is the <b>pink</b> part called?',
-      answer: askJob ? ch(p.job, NERVE.map((q) => q.job)) : ch(p.name, NERVE.map((q) => q.name)),
+      answer: askJob ? ch(p.job, NERVE.map((q) => q.job)) : textAns(p.name, NERVE_ACCEPT[p.name], 'one word'),
       hint: askJob ? 'Work out which part it is first, then remember its job.' : 'Brain at the top, spinal cord down the back, nerves branching out to everywhere else.',
       working: ['<b>Picture:</b> the brain is the manager, the spinal cord is the main cable, the nerves are the wires to every room.', `The pink part is the <b>${p.name}</b>.`, askJob ? `It is <b>${p.job}</b>.` : `So the answer is the ${p.name}.`],
       finalAnswer: askJob ? p.job : p.name, skill: 'nervous',
@@ -529,7 +614,7 @@
     if (form === 1) {
       return {
         prompt: `Which sense organ do you use for <b>${s.sense}</b>?`,
-        answer: ch(s.organ, SENSES.map((x) => x.organ), 5),
+        answer: textAns(s.organ, SENSE_ORGAN_ACCEPT[s.organ], 'one word'),
         hint: `It is the organ that detects ${s.detects}.`,
         working: [`${cap(s.sense)} means detecting <b>${s.detects}</b>.`, `The organ for that is the <b>${s.organ}</b>.`],
         finalAnswer: s.organ, skill: 'senses',
@@ -538,7 +623,7 @@
     if (form === 2) {
       return {
         prompt: `Which sense do your <b>${s.organ}</b> give you?`,
-        answer: ch(s.sense, SENSES.map((x) => x.sense), 5),
+        answer: textAns(s.sense, [], 'one word'),
         hint: `They detect ${s.detects}.`,
         working: [`Your ${s.organ} detect <b>${s.detects}</b>.`, `That sense is <b>${s.sense}</b>.`],
         finalAnswer: s.sense, skill: 'senses',
@@ -560,7 +645,7 @@
     return {
       visual: pathwaySvg(ex, missing),
       prompt: `Follow the message down the chain. What belongs in the <b>dotted box</b>?`,
-      answer: ch(right, wrongs, 4),
+      answer: missing === 5 ? ch(right, wrongs, 4) : textAns(right, { 2: [ex.organ], 3: ['nerve', 'the nerve'], 4: ['brain'] }[missing], 'one or two words'),
       hint: 'The chain is always: stimulus → receptor → nerve → brain → response.',
       working: [
         '<b>Picture:</b> a doorbell. Someone presses the button (stimulus), the wire carries it, the person inside decides, and the door opens.',
@@ -579,7 +664,7 @@
     const from = forward ? chain[i] : chain[i + 1];
     return {
       prompt: `The message path is: stimulus → receptor → nerve → brain → response. What comes <b>${forward ? 'straight after' : 'just before'}</b> the <b>${from}</b>?`,
-      answer: ch(want, chain, 4),
+      answer: textAns(want, CHAIN_ACCEPT[want], 'one word'),
       hint: 'Say the chain out loud: stimulus, receptor, nerve, brain, response.',
       working: ['<b>Picture:</b> a doorbell: press the button → the wire → the person inside → the door opens.', `Find "${from}" in the chain, then step ${forward ? 'forwards' : 'backwards'} one.`, `That gives the <b>${want}</b>.`],
       finalAnswer: want, skill: 'pathway',
@@ -591,7 +676,7 @@
     if (form === 1) {
       return {
         prompt: `<b>Stimulus:</b> ${ex.stim}. Which sense organ picks it up?`,
-        answer: ch(ex.organ, SENSES.map((x) => x.organ), 5),
+        answer: textAns(ex.organ, SENSE_ORGAN_ACCEPT[ex.organ], 'one word'),
         hint: 'Ask what kind of change it is: light, sound, a smell, a taste or a touch.',
         working: ['<b>Picture:</b> each sense organ is a different doorbell button.', `1. What kind of change is it? ${cap(ex.stim)}.`, `2. That is picked up by the <b>${ex.organ}</b>.`],
         finalAnswer: ex.organ, skill: 'pathway',
@@ -627,8 +712,16 @@
       { p: 'You pull your hand off a hot tray. What is the <b>receptor</b>?', a: 'the receptor cells in the skin of your hand', w: ['the muscle in your arm', 'the brain', 'the nerve'] },
       { p: 'Does your brain ever find out about a reflex?', a: 'Yes, but only just after your body has already moved', w: ['No, the brain never finds out', 'Yes, and it decides what to do first', 'Only if you were looking at the time'] },
       { p: 'Which of these is a reflex?', a: 'blinking when something flies at your face', w: ['waving at a friend', 'writing your name', 'kicking a netball on purpose'] },
-      { p: 'Which part of the nervous system handles a reflex on its own?', a: 'the spinal cord', w: ['the brain', 'the heart', 'the skin'] },
     ];
+    if (R.chance(1 / 8)) {
+      return {
+        prompt: 'Which part of the nervous system handles a reflex on its own?',
+        answer: textAns('spinal cord', ['the spinal cord'], 'two words'),
+        hint: 'A reflex turns round in the spinal cord — the brain only hears about it afterwards.',
+        working: ['<b>Picture:</b> your hand leaves the hot tray before your brain has even said "ouch".', 'Answer: <b>the spinal cord</b>.'],
+        finalAnswer: 'the spinal cord', skill: 'reflex',
+      };
+    }
     const f = R.pick(forms);
     return {
       prompt: f.p,
@@ -638,17 +731,29 @@
       finalAnswer: f.a, skill: 'reflex',
     };
   }
+  const MOVE_TEXT = [
+    { p: 'Which system carries the message that tells a muscle to move?', a: 'nervous system', accept: ['the nervous system'], full: 'the nervous system' },
+    { p: 'Which bone protects the <b>brain</b>?', a: 'skull', accept: ['the skull'], full: 'the skull' },
+    { p: 'Which bones protect the <b>spinal cord</b>?', a: 'backbone', accept: ['the backbone', 'vertebrae', 'the vertebrae', 'spine', 'the spine'], full: 'the backbone (the vertebrae)' },
+  ];
+  const MOVE_CHOICE = [
+    { p: 'What does a muscle do when the message from the nerve arrives?', a: 'It contracts — it gets shorter and pulls on a bone', w: ['It pushes the bone away', 'It gets longer and pushes', 'It turns the bone into energy'] },
+    { p: 'Why do muscles have to work in <b>pairs</b>?', a: 'A muscle can only pull, never push, so another one is needed to pull the bone back', w: ['One muscle would get too tired', 'One muscle pulls and the other pushes', 'Bones need two messages before they move'] },
+    { p: 'Put these in order for kicking a ball: muscle contracts, brain decides, nerve carries the message, bone moves.', a: 'brain decides → nerve carries the message → muscle contracts → bone moves', w: ['muscle contracts → bone moves → nerve carries the message → brain decides', 'nerve carries the message → brain decides → bone moves → muscle contracts', 'bone moves → muscle contracts → brain decides → nerve carries the message'] },
+    { p: 'Moving your arm needs three systems working together. Which three?', a: 'nervous, muscular and skeletal', w: ['nervous, digestive and breathing', 'muscular, digestive and circulatory', 'skeletal, breathing and digestive'] },
+  ];
   function moveTogetherQ() {
-    const forms = [
-      { p: 'Which system carries the message that tells a muscle to move?', a: 'the nervous system', w: ['the digestive system', 'the breathing system', 'the circulatory system'] },
-      { p: 'What does a muscle do when the message from the nerve arrives?', a: 'It contracts — it gets shorter and pulls on a bone', w: ['It pushes the bone away', 'It gets longer and pushes', 'It turns the bone into energy'] },
-      { p: 'Why do muscles have to work in <b>pairs</b>?', a: 'A muscle can only pull, never push, so another one is needed to pull the bone back', w: ['One muscle would get too tired', 'One muscle pulls and the other pushes', 'Bones need two messages before they move'] },
-      { p: 'Which bone protects the <b>brain</b>?', a: 'the skull', w: ['the ribs', 'the backbone', 'the pelvis'] },
-      { p: 'Which bones protect the <b>spinal cord</b>?', a: 'the backbone (the vertebrae)', w: ['the skull', 'the ribs', 'the leg bones'] },
-      { p: 'Put these in order for kicking a ball: muscle contracts, brain decides, nerve carries the message, bone moves.', a: 'brain decides → nerve carries the message → muscle contracts → bone moves', w: ['muscle contracts → bone moves → nerve carries the message → brain decides', 'nerve carries the message → brain decides → bone moves → muscle contracts', 'bone moves → muscle contracts → brain decides → nerve carries the message'] },
-      { p: 'Moving your arm needs three systems working together. Which three?', a: 'nervous, muscular and skeletal', w: ['nervous, digestive and breathing', 'muscular, digestive and circulatory', 'skeletal, breathing and digestive'] },
-    ];
-    const f = R.pick(forms);
+    if (R.chance(0.4)) {
+      const f = R.pick(MOVE_TEXT);
+      return {
+        prompt: f.p,
+        answer: textAns(f.a, f.accept, 'one or two words'),
+        hint: 'The nerve carries the order, the muscle pulls, and the bone is the lever that moves.',
+        working: ['<b>Picture:</b> a puppet — the nerve is the string, the muscle is the hand pulling it, and the bone is the wooden arm that swings.', `Answer: <b>${f.full}</b>.`],
+        finalAnswer: f.full, skill: 'move',
+      };
+    }
+    const f = R.pick(MOVE_CHOICE);
     return {
       prompt: f.p,
       answer: ch(f.a, f.w, 4),

@@ -41,6 +41,15 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each unit's actual vocabulary term, used wherever she has to
+   *  type the term herself instead of picking it from a list. */
+  const LAYER_NAME_ACCEPT = { crust: ['the crust'], mantle: ['the mantle'], 'outer core': ['the outer core'], 'inner core': ['the inner core'] };
+  const BOUNDARY_ACCEPT = {
+    push: { value: 'convergent', accept: ['pushing together', 'plates pushing together', 'converging', 'a convergent boundary'] },
+    pull: { value: 'divergent', accept: ['pulling apart', 'plates pulling apart', 'diverging', 'a divergent boundary'] },
+    slide: { value: 'transform', accept: ['sliding', 'plates sliding past each other', 'sliding past', 'a transform boundary'] },
+  };
 
   /* ---------- diagrams ---------- */
   function layersSvg(hide) {
@@ -151,11 +160,10 @@
     const inward = R.chance(0.7);
     const ans = inward ? LAYER_ORDER[i + 1] : LAYER_ORDER[i];
     const from = inward ? LAYER_ORDER[i] : LAYER_ORDER[i + 1];
-    const c = choice(ans, LAYER_ORDER, 4);
     return {
       visual: layersSvg(),
       prompt: `Travelling ${inward ? 'down towards the centre of the Earth' : 'back up towards the surface'}, which layer comes straight after the <b>${from}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(ans, LAYER_NAME_ACCEPT[ans], 'one or two words'),
       hint: 'From the outside in: crust → mantle → outer core → inner core.',
       working: ['<b>Picture:</b> a boiled egg — thin shell (crust), thick white (mantle), yolk (the core).', `Order inwards: ${LAYER_ORDER.join(' → ')}.`, `So the answer is the <b>${ans}</b>.`],
       finalAnswer: ans, skill: 'layers',
@@ -177,11 +185,10 @@
       };
     }
     if (style === 'name') {
-      const c = choice(l.n, LAYER_ORDER, 4);
       return {
         visual: layersSvg(LAYER_ORDER.indexOf(l.n)),
         prompt: `Which layer of the Earth is <b>${l.what}</b>?`,
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(l.n, LAYER_NAME_ACCEPT[l.n], 'one or two words'),
         hint: `Think of ${l.pic}.`,
         working: ['<b>Picture:</b> a boiled egg cut in half — shell, white, yolk.', `That is the <b>${l.n}</b>.`],
         finalAnswer: l.n, skill: 'layers',
@@ -224,11 +231,10 @@
     const b = R.pick(BOUNDARIES);
     const style = R.pick(['id', 'makes', 'nz']);
     if (style === 'id') {
-      const c = choice(b.name, BOUNDARIES.map((x) => x.name), 3);
       return {
         visual: boundarySvg(b.key),
         prompt: 'What kind of plate boundary is this diagram showing?',
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns(BOUNDARY_ACCEPT[b.key].value, BOUNDARY_ACCEPT[b.key].accept, 'one word'),
         hint: 'Follow the arrows: towards each other, away from each other, or sliding past?',
         working: [`<b>Picture:</b> ${b.pic}.`, `The arrows show <b>${b.name}</b>.`, `That makes ${b.makes}.`],
         finalAnswer: b.name, skill: 'boundaries',
@@ -245,10 +251,9 @@
         finalAnswer: b.makes, skill: 'boundaries',
       };
     }
-    const c = choice(b.name, BOUNDARIES.map((x) => x.name), 3);
     return {
       prompt: `<b>${b.nz.charAt(0).toUpperCase() + b.nz.slice(1)}</b> — what kind of plate movement is that?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(BOUNDARY_ACCEPT[b.key].value, BOUNDARY_ACCEPT[b.key].accept, 'one word'),
       hint: `It makes ${b.makes}.`,
       working: [`<b>Picture:</b> ${b.pic}.`, `${b.nz.charAt(0).toUpperCase() + b.nz.slice(1)} is <b>${b.name}</b>.`],
       finalAnswer: b.name, skill: 'boundaries',
@@ -292,11 +297,10 @@
         finalAnswer: w.what, skill: 'earthquakes',
       };
     }
-    const c = choice(w.n, QUAKE_WORDS.map((x) => x.n), 4);
     return {
       visual: /focus|epicentre/.test(w.n) ? quakeSvg() : undefined,
       prompt: `Which word means "${w.what.replace(/<\/?b>/g, '')}"?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(w.n, [], 'one word'),
       hint: 'Focus is deep down; the epicentre is directly above it on the surface.',
       working: ['<b>Picture:</b> a stone dropped in a pond — the splash point and the ripples.', `That word is <b>${w.n}</b>.`],
       finalAnswer: w.n, skill: 'earthquakes',
@@ -356,8 +360,16 @@
         w: ['<b>Picture:</b> a river of wet concrete pouring down the mountain.', 'Ruapehu&rsquo;s crater lake can burst out and mix with ash → a <b>lahar</b>.'] },
       { q: 'Why is a big ash cloud a problem even for people far away?', a: 'Ash blocks roads and airports and is dangerous to breathe', wrongs: ['Ash is red hot for weeks', 'Ash makes earthquakes happen', 'Ash melts metal'],
         w: ['<b>Picture:</b> fine, sharp grit blown for hundreds of kilometres.', 'Ash grounds planes, blocks gutters, spoils water and <b>hurts your lungs</b>.'] },
-      { q: 'What is magma called once it reaches the surface?', a: 'Lava', wrongs: ['Ash', 'Pumice', 'Basalt'], w: ['Underground → <b>magma</b>. Out in the air → <b>lava</b>.'] },
     ];
+    if (R.chance(0.2)) {
+      return {
+        prompt: 'What is magma called once it reaches the surface?',
+        answer: textAns('lava', [], 'one word'),
+        hint: 'Underground → magma. Out in the air → lava.',
+        working: ['Underground → <b>magma</b>. Out in the air → <b>lava</b>.'],
+        finalAnswer: 'Lava', skill: 'volcanoes',
+      };
+    }
     const it = R.pick(items);
     const c = choice(it.a, it.wrongs, 4);
     return {

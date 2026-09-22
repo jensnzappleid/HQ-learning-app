@@ -81,6 +81,7 @@
     const shuffled = R.shuffle(opts);
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   const JIT = [[2, -3], [-3, 2], [4, 1], [-2, -4], [1, 3], [-4, -1], [3, -2], [0, 4], [-1, -2], [2, 2], [-3, -3], [4, -4], [-2, 3], [1, -1], [3, 3], [-4, 2]];
@@ -165,10 +166,9 @@
 
   function substanceState(level) {
     const s = R.pick(SUBSTANCES);
-    const c = choice(s.state, STATES.filter((x) => x !== s.state), 3);
     return {
       prompt: `What state of matter is <b>${s.name}</b>?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(s.state, [], 'one word'),
       hint: 'Ask: does it keep its own shape (solid), pour (liquid), or fill the whole space (gas)?',
       working: [
         '<b>Picture:</b> shape test → pour test → fill-the-room test.',
@@ -185,11 +185,10 @@
     const i = R.int(0, 2);
     const letter = ['A', 'B', 'C'][i];
     const s = m.order[i];
-    const c = choice(s, STATES.filter((x) => x !== s), 3);
     return {
       visual: m.svg,
       prompt: `Box <b>${letter}</b> shows the particles in one state of matter. Which state is it?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns(s, [], 'one word'),
       hint: 'Look at the gaps: none and neat = solid, none but jumbled = liquid, big gaps = gas.',
       working: [
         '<b>Picture:</b> assembly rows / lunchtime crowd / empty field.',
@@ -223,10 +222,9 @@
   function compression(level) {
     const which = R.pick(['why-gas', 'which-squash', 'syringe', 'tyre']);
     if (which === 'which-squash') {
-      const c = choice('a gas', ['a solid', 'a liquid', 'all three the same'], 4);
       return {
         prompt: 'Which state of matter can be squashed (compressed) into a much smaller space?',
-        answer: { type: 'choice', value: c.value, choices: c.choices },
+        answer: textAns('gas', ['a gas'], 'one word'),
         hint: 'You can only squash something that has empty space inside it.',
         working: ['<b>Picture:</b> you can squash a bag of chips because it is mostly air.', '1. Which state has big gaps between the particles? A gas.', 'So only <b>a gas</b> can be squashed.'],
         finalAnswer: 'a gas', skill: 'compression',
@@ -319,10 +317,9 @@
       };
     }
     const s = R.pick(SPREADS);
-    const c = choice('diffusion', ['evaporation', 'melting', 'filtering'], 4);
     return {
       prompt: `What is the name of the process when ${s.thing} colours the whole glass without any stirring?`,
-      answer: { type: 'choice', value: c.value, choices: c.choices },
+      answer: textAns('diffusion', ['diffuse', 'diffusing'], 'one word'),
       hint: 'Particles spreading out from where there are lots of them.',
       working: ['1. Nobody stirred it — so the particles moved by themselves.', '2. Particles spreading out on their own is <b>diffusion</b>.'],
       finalAnswer: 'diffusion', skill: 'diffusion',

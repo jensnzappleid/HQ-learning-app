@@ -31,6 +31,7 @@
     return { choices: shuffled, value: shuffled.indexOf(correct) };
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
   const r1 = (v) => Math.round(v * 10) / 10;
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const arrow = (x1, y1, x2, y2, col, w) => {
@@ -126,17 +127,16 @@
   /* ---------- question makers ---------- */
   function lightFact() {
     const q = R.pick([
-      { p: 'How does light travel?', a: 'In straight lines', w: ['In curves', 'In circles', 'It bends round corners'] },
+      { p: 'How does light travel?', a: 'In straight lines', w: ['In curves', 'In circles', 'It bends round corners'], short: 'in straight lines', shortAccept: ['straight lines', 'straight'] },
       { p: 'Why do we get a shadow behind an object?', a: 'Light travels in straight lines and cannot get through the object', w: ['The object makes darkness', 'Light bends round the object', 'The object pushes the light away'] },
-      { p: 'What do we call an object that lets NO light through?', a: 'opaque', w: ['transparent', 'translucent', 'luminous'] },
-      { p: 'What do we call an object you can see clearly through?', a: 'transparent', w: ['opaque', 'translucent', 'reflective'] },
-      { p: 'What do we call an object that lets some light through, but you cannot see clearly through it?', a: 'translucent', w: ['transparent', 'opaque', 'luminous'] },
-      { p: 'Which of these is a light source (it makes its own light)?', a: 'The Sun', w: ['The Moon', 'A mirror', 'A white wall'] },
+      { p: 'What do we call an object that lets NO light through?', a: 'opaque', w: ['transparent', 'translucent', 'luminous'], short: 'opaque', shortAccept: [] },
+      { p: 'What do we call an object you can see clearly through?', a: 'transparent', w: ['opaque', 'translucent', 'reflective'], short: 'transparent', shortAccept: [] },
+      { p: 'What do we call an object that lets some light through, but you cannot see clearly through it?', a: 'translucent', w: ['transparent', 'opaque', 'luminous'], short: 'translucent', shortAccept: [] },
+      { p: 'Which of these is a light source (it makes its own light)?', a: 'The Sun', w: ['The Moon', 'A mirror', 'A white wall'], short: 'the sun', shortAccept: ['sun'] },
       { p: 'How do we see a non-luminous object like a chair?', a: 'Light bounces off it into our eyes', w: ['The chair makes its own light', 'Our eyes send light out to it', 'We see it because it is dark'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'one word') : ans(choice(q.a, q.w, 4)),
       hint: 'Light goes in straight lines, and we see things when light bounces off them into our eyes.',
       working: ['<b>Picture:</b> a torch beam in a dusty room — dead straight, never curved.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'light',
@@ -144,10 +144,9 @@
   }
   function opacityQ() {
     const o = R.pick(OPACITY);
-    const c = choice(o.t, ['transparent', 'translucent', 'opaque'], 3);
     return {
       prompt: `Is <b>${o.m}</b> transparent, translucent or opaque?`,
-      answer: ans(c),
+      answer: textAns(o.t, [], 'one word'),
       hint: 'See through clearly = transparent. Blurry light gets through = translucent. No light at all = opaque.',
       working: [
         '<b>Picture:</b> a window (transparent) · frosted bathroom glass (translucent) · a door (opaque).',
@@ -187,16 +186,15 @@
   function reflectionFact() {
     const i = R.step(25, 65, 5);
     const q = R.pick([
-      { p: 'On a ray diagram, what is the dashed line at 90° to the mirror called?', a: 'the normal', w: ['the incident ray', 'the reflected ray', 'the angle of reflection'] },
-      { p: 'Where do we measure the angle of incidence from?', a: 'From the normal', w: ['From the mirror surface', 'From the floor', 'From the reflected ray'] },
+      { p: 'On a ray diagram, what is the dashed line at 90° to the mirror called?', a: 'the normal', w: ['the incident ray', 'the reflected ray', 'the angle of reflection'], short: 'the normal', shortAccept: ['normal'] },
+      { p: 'Where do we measure the angle of incidence from?', a: 'From the normal', w: ['From the mirror surface', 'From the floor', 'From the reflected ray'], short: 'the normal', shortAccept: ['normal', 'from the normal'] },
       { p: 'What does the law of reflection say?', a: 'The angle of incidence equals the angle of reflection', w: ['The angle of incidence is double the angle of reflection', 'Light always reflects straight back', 'The angle depends on the colour'] },
       { p: 'Why can you see your face in a mirror but not in a brick wall?', a: 'The mirror is smooth, so it reflects the rays in a neat pattern', w: ['A brick wall absorbs all the light', 'A mirror makes its own light', 'Brick is transparent'] },
-      { p: 'What is the ray that hits the mirror called?', a: 'the incident ray', w: ['the reflected ray', 'the normal', 'the refracted ray'] },
+      { p: 'What is the ray that hits the mirror called?', a: 'the incident ray', w: ['the reflected ray', 'the normal', 'the refracted ray'], short: 'the incident ray', shortAccept: ['incident ray'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: mirrorSvg(i),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'one or two words') : ans(choice(q.a, q.w, 4)),
       hint: 'Ray in = incident ray. Ray out = reflected ray. Dashed line at 90° = the normal.',
       working: ['<b>Picture:</b> a ball bouncing off a wall — it leaves at the same angle it arrived.', 'All angles are measured from the <b>normal</b>, the dashed line at 90° to the mirror.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'reflection',
@@ -205,16 +203,15 @@
   function refractionQ() {
     const q = R.pick([
       { p: 'Why does a straw in a glass of water look bent?', a: 'Light bends (refracts) as it leaves the water', w: ['The straw really does bend in water', 'Water absorbs some of the light', 'The glass is a mirror'] },
-      { p: 'What is it called when light bends as it goes from air into glass?', a: 'refraction', w: ['reflection', 'absorption', 'dispersion'] },
-      { p: 'Why does light bend when it goes from air into water?', a: 'It slows down in the water', w: ['It speeds up in the water', 'It gets heavier', 'The water pushes it sideways'] },
+      { p: 'What is it called when light bends as it goes from air into glass?', a: 'refraction', w: ['reflection', 'absorption', 'dispersion'], short: 'refraction', shortAccept: [] },
+      { p: 'Why does light bend when it goes from air into water?', a: 'It slows down in the water', w: ['It speeds up in the water', 'It gets heavier', 'The water pushes it sideways'], short: 'it slows down', shortAccept: ['it slows down in the water', 'slows down'] },
       { p: 'A swimming pool always looks shallower than it really is. Why?', a: 'Light from the bottom refracts as it leaves the water', w: ['Water shrinks things', 'The pool really is shallow', 'Light is absorbed by water'] },
-      { p: 'What happens to the speed of light when it enters a glass block?', a: 'It slows down', w: ['It speeds up', 'It stays exactly the same', 'It stops'] },
-      { p: 'White light is split into a rainbow by a prism. What is that called?', a: 'dispersion', w: ['reflection', 'conduction', 'absorption'] },
+      { p: 'What happens to the speed of light when it enters a glass block?', a: 'It slows down', w: ['It speeds up', 'It stays exactly the same', 'It stops'], short: 'it slows down', shortAccept: ['slows down'] },
+      { p: 'White light is split into a rainbow by a prism. What is that called?', a: 'dispersion', w: ['reflection', 'conduction', 'absorption'], short: 'dispersion', shortAccept: [] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: refractionSvg(),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'a few words') : ans(choice(q.a, q.w, 4)),
       hint: 'Light changes speed when it changes material, and that makes the ray change direction.',
       working: [
         '<b>Picture:</b> a trolley wheel hitting sand at an angle — one side slows first, so the whole thing swings round.',
@@ -264,10 +261,9 @@
   function filterQ() {
     const obj = R.pick(OBJ_COLOURS), f = R.pick(FILTERS);
     const looks = obj === 'white' ? f : (obj === f ? obj : 'black');
-    const c = choice(looks, ['red', 'green', 'blue', 'black', 'white'], 4);
     return {
       prompt: `A <b>${obj}</b> object is looked at through a <b>${f} filter</b>. What colour does it look?`,
-      answer: ans(c),
+      answer: textAns(looks, [], 'one word'),
       hint: 'A filter only lets its OWN colour through. If that colour is not coming off the object, you see black.',
       working: [
         '<b>Picture:</b> the filter is a gate that only opens for its own colour.',
@@ -280,30 +276,36 @@
   }
   function soundFact() {
     const q = R.pick([
-      { p: 'What makes a sound?', a: 'Something vibrating', w: ['Something getting hot', 'Something glowing', 'Something falling'] },
-      { p: 'What does sound need in order to travel?', a: 'A medium — a solid, liquid or gas', w: ['A vacuum', 'Light', 'Electricity'] },
+      { p: 'What makes a sound?', a: 'Something vibrating', w: ['Something getting hot', 'Something glowing', 'Something falling'], short: 'vibrating', shortAccept: ['something vibrating', 'vibrations', 'it vibrates'] },
+      { p: 'What does sound need in order to travel?', a: 'A medium — a solid, liquid or gas', w: ['A vacuum', 'Light', 'Electricity'], short: 'a medium', shortAccept: ['medium', 'a solid, liquid or gas'] },
       { p: 'Why is there no sound in space?', a: 'Space is a vacuum, so there are no particles to vibrate', w: ['Space is too cold', 'Sound is too slow', 'Space is too big'] },
-      { p: 'What is the unit of frequency?', a: 'hertz (Hz)', w: ['decibels (dB)', 'joules (J)', 'newtons (N)'] },
-      { p: 'What does the <b>frequency</b> of a sound wave control?', a: 'The pitch — how high or low it sounds', w: ['The loudness', 'The speed of the sound', 'The colour'] },
-      { p: 'What does the <b>amplitude</b> of a sound wave control?', a: 'The loudness', w: ['The pitch', 'The speed', 'The direction'] },
+      { p: 'What is the unit of frequency?', a: 'hertz (Hz)', w: ['decibels (dB)', 'joules (J)', 'newtons (N)'], short: 'hertz', shortAccept: ['hz', 'hertz (hz)'] },
+      { p: 'What does the <b>frequency</b> of a sound wave control?', a: 'The pitch — how high or low it sounds', w: ['The loudness', 'The speed of the sound', 'The colour'], short: 'pitch', shortAccept: ['the pitch'] },
+      { p: 'What does the <b>amplitude</b> of a sound wave control?', a: 'The loudness', w: ['The pitch', 'The speed', 'The direction'], short: 'loudness', shortAccept: ['the loudness', 'how loud it is'] },
       { p: 'What is an <b>echo</b>?', a: 'Sound reflected back off a hard surface', w: ['Sound bending round a corner', 'Sound being absorbed', 'Two sounds made at once'] },
-      { p: 'Which travels faster?', a: 'Light — about a million times faster than sound', w: ['Sound — it reaches you first', 'They travel at the same speed', 'It depends on the weather'] },
-      { p: 'Which part of your body turns vibrations into signals for your brain?', a: 'The ear drum and the inner ear', w: ['The eye', 'The nose', 'The skin'] },
+      { p: 'Which travels faster?', a: 'Light — about a million times faster than sound', w: ['Sound — it reaches you first', 'They travel at the same speed', 'It depends on the weather'], short: 'light', shortAccept: ['light is faster', 'light travels faster'] },
+      { p: 'Which part of your body turns vibrations into signals for your brain?', a: 'The ear drum and the inner ear', w: ['The eye', 'The nose', 'The skin'], short: 'the ear drum', shortAccept: ['ear drum', 'the eardrum', 'eardrum', 'the ear', 'ears', 'the inner ear'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'one word') : ans(choice(q.a, q.w, 4)),
       hint: 'Sound is a vibration passed on by particles. No particles = no sound.',
       working: ['<b>Picture:</b> a drum skin shaking, knocking the air particles into their neighbours all the way to your ear.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'sound',
     };
   }
+  const VIBRATE_ACCEPT = {
+    'the string vibrating': ['the string', 'string vibrating', 'the strings'],
+    'the skin vibrating': ['the skin', 'skin vibrating', 'the drum skin'],
+    'the cone vibrating in and out': ['the cone', 'cone vibrating', 'the speaker cone'],
+    'your vocal cords vibrating': ['vocal cords', 'your vocal cords', 'the vocal cords'],
+    'the prongs vibrating': ['the prongs', 'prongs vibrating', 'the fork prongs'],
+    'the ruler vibrating': ['the ruler', 'ruler vibrating'],
+  };
   function vibrationQ() {
     const s = R.pick(SOUND_SOURCES);
-    const c = choice(s.v, SOUND_SOURCES.filter((x) => x.v !== s.v).map((x) => x.v), 4);
     return {
       prompt: `What is actually vibrating to make the sound of <b>${s.s}</b>?`,
-      answer: ans(c),
+      answer: textAns(s.v, VIBRATE_ACCEPT[s.v], 'a few words'),
       hint: 'Every sound starts with something vibrating.',
       working: ['<b>Picture:</b> touch a speaker while music plays — you can feel it shaking.', `For ${s.s}, the sound comes from <b>${s.v}</b>.`, 'Those vibrations pass into the air and travel to your ear.'],
       finalAnswer: s.v, skill: 'sound',
@@ -312,19 +314,17 @@
   function mediumQ() {
     const m = R.pick(MEDIA);
     if (m.speed === 0) {
-      const c = choice('No sound travels at all', ['340 m/s, the same as air', 'Faster than in any material', 'Only very quiet sounds travel'], 4);
       return {
         prompt: 'How fast does sound travel through <b>empty space (a vacuum)</b>?',
-        answer: ans(c),
+        answer: textAns('no sound at all', ['no sound travels at all', 'no sound', 'none', 'nothing', 'zero'], 'a few words'),
         hint: 'Sound is particles passing a vibration on. What if there are no particles?',
         working: ['<b>Picture:</b> a line of dominoes with no dominoes — nothing can be passed on.', '1. A vacuum has no particles.', '2. With nothing to vibrate, sound cannot travel.', 'So in space, <b>no sound travels at all</b>.'],
         finalAnswer: 'No sound travels at all', skill: 'sound',
       };
     }
-    const c = choice(m.kind, ['solid', 'liquid', 'gas'], 3);
     return {
       prompt: `Sound travels through <b>${m.m}</b> at about ${m.speed} m/s. What state of matter is ${m.m}?`,
-      answer: ans(c),
+      answer: textAns(m.kind, [], 'one word'),
       hint: 'Sound goes fastest in solids (particles packed tight) and slowest in gases.',
       working: [
         '<b>Picture:</b> particles packed close together pass the vibration on faster.',
@@ -356,16 +356,15 @@
   }
   function waveChange() {
     const q = R.pick([
-      { p: 'A singer sings the same note but much <b>louder</b>. What happens to the wave?', a: 'The amplitude gets bigger', w: ['The frequency gets bigger', 'The frequency gets smaller', 'Nothing changes'] },
-      { p: 'A guitar string is tightened so it plays a <b>higher</b> note. What happens to the wave?', a: 'The frequency gets bigger', w: ['The amplitude gets bigger', 'The amplitude gets smaller', 'The wave stops'] },
-      { p: 'You turn the volume <b>down</b> on a speaker. What happens to the wave?', a: 'The amplitude gets smaller', w: ['The frequency gets smaller', 'The frequency gets bigger', 'The wave gets faster'] },
-      { p: 'A big drum makes a <b>low</b> note and a small drum a <b>high</b> note. What is different?', a: 'The frequency — the small drum vibrates faster', w: ['The amplitude — the small drum is louder', 'The speed of the sound', 'The colour of the sound'] },
-      { p: 'A tall wave with only a few waves across the screen sounds how?', a: 'Loud and low', w: ['Loud and high', 'Quiet and low', 'Quiet and high'] },
-      { p: 'A short wave with lots of waves across the screen sounds how?', a: 'Quiet and high', w: ['Loud and high', 'Quiet and low', 'Loud and low'] },
+      { p: 'A singer sings the same note but much <b>louder</b>. What happens to the wave?', a: 'The amplitude gets bigger', w: ['The frequency gets bigger', 'The frequency gets smaller', 'Nothing changes'], short: 'amplitude gets bigger', shortAccept: ['bigger amplitude', 'the amplitude increases', 'amplitude increases'] },
+      { p: 'A guitar string is tightened so it plays a <b>higher</b> note. What happens to the wave?', a: 'The frequency gets bigger', w: ['The amplitude gets bigger', 'The amplitude gets smaller', 'The wave stops'], short: 'frequency gets bigger', shortAccept: ['bigger frequency', 'the frequency increases', 'frequency increases'] },
+      { p: 'You turn the volume <b>down</b> on a speaker. What happens to the wave?', a: 'The amplitude gets smaller', w: ['The frequency gets smaller', 'The frequency gets bigger', 'The wave gets faster'], short: 'amplitude gets smaller', shortAccept: ['smaller amplitude', 'the amplitude decreases', 'amplitude decreases'] },
+      { p: 'A big drum makes a <b>low</b> note and a small drum a <b>high</b> note. What is different?', a: 'The frequency — the small drum vibrates faster', w: ['The amplitude — the small drum is louder', 'The speed of the sound', 'The colour of the sound'], short: 'the frequency', shortAccept: ['frequency'] },
+      { p: 'A tall wave with only a few waves across the screen sounds how?', a: 'Loud and low', w: ['Loud and high', 'Quiet and low', 'Quiet and high'], short: 'loud and low', shortAccept: [] },
+      { p: 'A short wave with lots of waves across the screen sounds how?', a: 'Quiet and high', w: ['Loud and high', 'Quiet and low', 'Loud and low'], short: 'quiet and high', shortAccept: [] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p, answer: q.short ? textAns(q.short, q.shortAccept, 'a few words') : ans(choice(q.a, q.w, 4)),
       hint: 'Amplitude (height) = loudness. Frequency (how many waves) = pitch.',
       working: ['<b>Picture:</b> taller wave = louder shout; squashed-up waves = squeaky high voice.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'waves',

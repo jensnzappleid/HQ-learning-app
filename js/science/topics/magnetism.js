@@ -47,6 +47,7 @@
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
 
   /* ---------- diagrams ---------- */
   function barMagnet(x, y, w, h, leftPole, small) {
@@ -146,10 +147,11 @@
   function magneticQ() {
     const m = R.pick(MATERIALS);
     const correct = m.mag ? 'Magnetic' : 'Not magnetic';
-    const c = choice(correct, ['Magnetic', 'Not magnetic'], 2);
     return {
       prompt: `Is <b>${m.m}</b> attracted to a magnet?`,
-      answer: ans(c),
+      answer: m.mag
+        ? textAns('magnetic', [], 'one word')
+        : textAns('not magnetic', ['non-magnetic', 'nonmagnetic', 'non magnetic'], 'two words'),
       hint: 'Only four metals are magnetic: iron, steel, nickel and cobalt. Every other metal — and everything that is not a metal — is not.',
       working: [
         '<b>Picture:</b> a magnet sticks to the fridge door (steel) but not to an aluminium can.',
@@ -177,11 +179,12 @@
     const a = R.pick(['N', 'S']), b = R.pick(['N', 'S']);
     const same = a === b;
     const correct = same ? 'They push apart (repel)' : 'They pull together (attract)';
-    const c = choice(correct, ['They push apart (repel)', 'They pull together (attract)'], 2);
     return {
       visual: twoMagnetsSvg(a === 'N' ? 'S' : 'N', b),
       prompt: `A <b>${a} pole</b> is brought up to a <b>${b} pole</b>. What happens?`,
-      answer: ans(c),
+      answer: same
+        ? textAns('repel', ['they repel', 'push apart', 'repel each other', 'push each other away'], 'one word')
+        : textAns('attract', ['they attract', 'pull together', 'attract each other'], 'one word'),
       hint: 'Like poles repel, unlike poles attract. Say it like "same pushes away".',
       working: [
         '<b>Picture:</b> two fridge magnets — flip one over and it suddenly grips instead of sliding away.',
@@ -194,10 +197,10 @@
   }
   function poleFact() {
     const q = R.pick([
-      { p: 'What are the two ends of a magnet called?', a: 'The north pole and the south pole', w: ['The positive and negative ends', 'The strong end and the weak end', 'The top and the bottom'] },
-      { p: 'What happens when two <b>like</b> poles meet (N and N)?', a: 'They repel — they push apart', w: ['They attract — they pull together', 'Nothing happens', 'They swap over'] },
-      { p: 'What happens when two <b>unlike</b> poles meet (N and S)?', a: 'They attract — they pull together', w: ['They repel — they push apart', 'Nothing happens', 'They cancel out'] },
-      { p: 'Where is a bar magnet\'s pull the <b>strongest</b>?', a: 'At the two poles (the ends)', w: ['In the middle', 'All the way along equally', 'Just outside the middle'] },
+      { p: 'What are the two ends of a magnet called?', a: 'The north pole and the south pole', w: ['The positive and negative ends', 'The strong end and the weak end', 'The top and the bottom'], short: 'poles', shortAccept: ['north and south poles', 'the north pole and the south pole', 'north pole and south pole', 'north and south'] },
+      { p: 'What happens when two <b>like</b> poles meet (N and N)?', a: 'They repel — they push apart', w: ['They attract — they pull together', 'Nothing happens', 'They swap over'], short: 'repel', shortAccept: ['they repel', 'push apart', 'repel each other', 'push each other away'] },
+      { p: 'What happens when two <b>unlike</b> poles meet (N and S)?', a: 'They attract — they pull together', w: ['They repel — they push apart', 'Nothing happens', 'They cancel out'], short: 'attract', shortAccept: ['they attract', 'pull together', 'attract each other'] },
+      { p: 'Where is a bar magnet\'s pull the <b>strongest</b>?', a: 'At the two poles (the ends)', w: ['In the middle', 'All the way along equally', 'Just outside the middle'], short: 'the poles', shortAccept: ['poles', 'at the poles', 'the ends', 'at the ends'] },
       { p: 'A magnet is cut in half. What do you get?', a: 'Two smaller magnets, each with a N and a S pole', w: ['One N magnet and one S magnet', 'Two pieces that are no longer magnetic', 'One magnet and one piece of ordinary iron'] },
       { p: 'What is the only sure test that a bar really is a magnet (not just iron)?', a: 'It <b>repels</b> one end of a known magnet', w: ['It attracts a known magnet', 'It sticks to the fridge', 'It is made of metal'] },
       { p: 'How should bar magnets be stored?', a: 'In pairs, N next to S, with iron keepers across the ends', w: ['Loose in a drawer with the N poles together', 'In water', 'Standing up in the sun'] },
@@ -205,9 +208,9 @@
       { p: 'A paper clip is left stuck to a magnet, then picks up a second clip. Why?', a: 'The clip has been turned into a temporary magnet', w: ['The clip is now permanently a magnet', 'The clip is charged with static', 'Paper clips always stick together'] },
       { p: 'What is the difference between a permanent magnet and a temporary one?', a: 'A temporary magnet only works while it is near a magnet or has current flowing', w: ['A temporary magnet is smaller', 'A permanent magnet has only one pole', 'There is no difference'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p,
+      answer: q.short ? textAns(q.short, q.shortAccept, 'a word or two') : ans(choice(q.a, q.w, 4)),
       hint: 'Like poles repel, unlike attract — and only a magnet can REPEL another magnet.',
       working: ['<b>Picture:</b> two fridge magnets pushing apart, then flipping one over so they snap together.', `Answer: <b>${q.a}</b>.`],
       finalAnswer: q.a, skill: 'poles',
@@ -215,7 +218,7 @@
   }
   function fieldQ() {
     const q = R.pick([
-      { p: 'What do we call the space around a magnet where it can push or pull?', a: 'its magnetic field', w: ['its magnetic pole', 'its current', 'its charge'] },
+      { p: 'What do we call the space around a magnet where it can push or pull?', a: 'its magnetic field', w: ['its magnetic pole', 'its current', 'its charge'], short: 'magnetic field', shortAccept: ['a magnetic field', 'the magnetic field', 'field'] },
       { p: 'Which way do the field lines point outside a magnet?', a: 'From the north pole round to the south pole', w: ['From the south pole round to the north pole', 'Straight up', 'Towards the middle of the magnet'] },
       { p: 'What does it mean when the field lines are drawn <b>close together</b>?', a: 'The field is stronger there', w: ['The field is weaker there', 'The magnet is broken', 'There is no field there'] },
       { p: 'How can you show the field around a magnet in the lab?', a: 'Sprinkle iron filings on paper over the magnet', w: ['Pour water over the magnet', 'Shine a torch on it', 'Weigh it on scales'] },
@@ -224,10 +227,10 @@
       { p: 'Can a magnetic field pass through a sheet of paper or a plastic ruler?', a: 'Yes — the field passes straight through non-magnetic materials', w: ['No, paper blocks it completely', 'Only if the paper is wet', 'Only through metal'] },
       { p: 'What happens to the field as you move further away from a magnet?', a: 'It gets weaker', w: ['It gets stronger', 'It stays exactly the same', 'It reverses direction'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: fieldSvg(),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p,
+      answer: q.short ? textAns(q.short, q.shortAccept, 'two words') : ans(choice(q.a, q.w, 4)),
       hint: 'Field lines always leave the N pole and come back into the S pole, and they are closest together at the poles.',
       working: [
         '<b>Picture:</b> iron filings sprinkled on paper make lines that loop from one end round to the other.',
@@ -285,15 +288,15 @@
       { p: 'What is the big advantage of an electromagnet over an ordinary magnet?', a: 'You can switch it on and off', w: ['It is always stronger', 'It never needs electricity', 'It works without a core'] },
       { p: 'What happens to an electromagnet when the switch is opened?', a: 'It stops being a magnet and drops whatever it was holding', w: ['It stays magnetic forever', 'It gets stronger', 'It becomes a permanent magnet'] },
       { p: 'Why is the core of an electromagnet made of <b>iron</b>?', a: 'Iron makes the magnetic field much stronger', w: ['Iron is cheap', 'Iron stops the wire getting hot', 'Iron is an insulator'] },
-      { p: 'A scrapyard crane picks up cars and then drops them into a pile. What must it be using?', a: 'An electromagnet', w: ['A permanent bar magnet', 'A compass', 'Static electricity'] },
+      { p: 'A scrapyard crane picks up cars and then drops them into a pile. What must it be using?', a: 'An electromagnet', w: ['A permanent bar magnet', 'A compass', 'Static electricity'], short: 'electromagnet', shortAccept: ['an electromagnet'] },
       { p: 'What makes the magnetic field appear in an electromagnet?', a: 'The current flowing through the coil of wire', w: ['The iron nail on its own', 'The plastic covering on the wire', 'Static electricity on the coil'] },
       { p: 'What happens to an electromagnet if the cell is connected the other way round?', a: 'It still works, but the north and south poles swap ends', w: ['It stops working', 'It gets much stronger', 'The nail melts'] },
       { p: 'Where is an electromagnet used inside a doorbell?', a: 'It pulls an iron arm across to hit the bell', w: ['It lights the bulb', 'It measures the current', 'It stores the charge'] },
     ]);
-    const c = choice(q.a, q.w, 4);
     return {
       visual: electromagnetSvg(5),
-      prompt: q.p, answer: ans(c),
+      prompt: q.p,
+      answer: q.short ? textAns(q.short, q.shortAccept, 'one word') : ans(choice(q.a, q.w, 4)),
       hint: 'Current through a coil makes a magnetic field. Switch the current off and the magnetism goes.',
       working: [
         '<b>Picture:</b> a scrapyard crane lifting a car, then switching off to drop it.',

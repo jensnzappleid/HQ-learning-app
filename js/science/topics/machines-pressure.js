@@ -65,6 +65,17 @@
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const artN = (n) => (n === 8 || n === 18 ? 'an' : 'a');
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each simple machine's name. */
+  const MACHINE_ANSWER = {
+    lever: { value: 'lever', accept: ['a lever'] },
+    pulley: { value: 'pulley', accept: ['a pulley'] },
+    'ramp (inclined plane)': { value: 'ramp', accept: ['a ramp', 'the ramp', 'inclined plane', 'an inclined plane', 'slope'] },
+    'wheel and axle': { value: 'wheel and axle', accept: ['a wheel and axle', 'wheel & axle'] },
+    gear: { value: 'gear', accept: ['a gear', 'gears'] },
+    wedge: { value: 'wedge', accept: ['a wedge'] },
+    screw: { value: 'screw', accept: ['a screw'] },
+  };
   function pickPressure() {
     let a, F, p;
     do { a = R.pick(AREAS); F = R.pick(FORCES); p = (F * 1000) / a.m; }
@@ -212,10 +223,10 @@
   function machineFromExample() {
     const m = R.pick(MACHINES);
     const ex = R.pick(m.ex.split(', '));
-    const c = choice(m.name, MACHINES.filter((x) => x.name !== m.name).map((x) => x.name));
+    const ma = MACHINE_ANSWER[m.name];
     return {
       prompt: `Which simple machine is this: <b>${ex}</b>?`,
-      answer: ans(c),
+      answer: textAns(ma.value, ma.accept, 'one word'),
       hint: 'Does it turn on a pivot, roll on a wheel, slope, have teeth, or split things apart?',
       working: [`<b>Picture:</b> ${ex}.`, `It works by being ${m.job}.`, `So it is a <b>${m.name}</b>.`],
       finalAnswer: m.name, skill: 'machines',
@@ -223,10 +234,10 @@
   }
   function machineFromJob() {
     const m = R.pick(MACHINES);
-    const c = choice(m.name, MACHINES.filter((x) => x.name !== m.name).map((x) => x.name));
+    const ma = MACHINE_ANSWER[m.name];
     return {
       prompt: `Which simple machine is described here: <b>${m.job}</b>?`,
-      answer: ans(c),
+      answer: textAns(ma.value, ma.accept, 'one word'),
       hint: `Examples of it: ${m.ex}.`,
       working: [`<b>Picture:</b> ${m.pic}.`, `That is a <b>${m.name}</b> — for example ${m.ex}.`],
       finalAnswer: m.name, skill: 'machines',
@@ -235,11 +246,10 @@
   function leverPart() {
     const p = R.pick(LEVER_PARTS);
     const cls = R.pick([1, 2, 3]);
-    const c = choice(p.part, LEVER_PARTS.map((x) => x.part), 3);
     return {
       visual: leverSvg(cls, { blank: p.part, title: 'name the missing label' }),
       prompt: `On this lever, which part is marked <b>?</b>&nbsp;— it is ${p.meaning}.`,
-      answer: ans(c),
+      answer: textAns(p.part, [], 'one word'),
       hint: 'Load = the heavy thing. Effort = your push. Pivot = the point it turns on.',
       working: ['<b>Picture:</b> a seesaw — you push one end (effort), your friend sits on the other (load), and the bar rocks on the middle (pivot).', `${cap(p.meaning)} is the <b>${p.part}</b>.`],
       finalAnswer: p.part, skill: 'levers',
@@ -261,11 +271,10 @@
     const lc = LEVER_CLASSES.find((x) => x.cls === it.cls);
     const askWhich = R.chance(0.5);
     if (askWhich) {
-      const c = choice(`class ${it.cls}`, LEVER_CLASSES.map((x) => `class ${x.cls}`), 3);
       return {
         visual: leverSvg(it.cls, { title: it.item }),
         prompt: `Which class of lever is <b>${it.item}</b>?`,
-        answer: ans(c),
+        answer: textAns(`class ${it.cls}`, [String(it.cls)], `class 1, 2 or 3`),
         hint: 'Look at what sits in the MIDDLE: pivot = class 1, load = class 2, effort = class 3.',
         working: [
           '<b>Picture:</b> line up the three parts and see which one is piggy in the middle.',
@@ -275,11 +284,10 @@
         finalAnswer: `class ${it.cls}`, skill: 'levers',
       };
     }
-    const c = choice(lc.middle, LEVER_PARTS.map((x) => x.part), 3);
     return {
       visual: leverSvg(it.cls, { title: it.item }),
       prompt: `In <b>${it.item}</b>, which part is in the <b>middle</b>?`,
-      answer: ans(c),
+      answer: textAns(lc.middle, [], 'one word'),
       hint: 'Look at the picture: which label sits between the other two?',
       working: [`<b>Picture:</b> ${it.item}.`, `${cap(lc.say)}.`, `So it is a <b>class ${it.cls}</b> lever.`],
       finalAnswer: lc.middle, skill: 'levers',
@@ -389,15 +397,27 @@
   }
 
   /* ---------- question makers: pressure ---------- */
+  const PF_TEXT = [
+    { p: 'What is the formula for <b>pressure</b>?', a: 'force ÷ area', accept: ['force/area', 'force divided by area', 'pressure = force ÷ area', 'pressure = force/area'] },
+    { p: 'What unit is pressure measured in?', a: 'pascals', accept: ['pascal', 'pa', 'n/m2', 'n/m²'] },
+  ];
+  const PF_CHOICE = [
+    { p: 'If the force stays the same and the area gets <b>smaller</b>, what happens to the pressure?', a: 'It gets bigger', w: ['It gets smaller', 'It stays the same', 'It becomes zero'] },
+    { p: 'If the force stays the same and the area gets <b>bigger</b>, what happens to the pressure?', a: 'It gets smaller', w: ['It gets bigger', 'It stays the same', 'It doubles'] },
+    { p: 'What does pressure actually mean?', a: 'How much force is pressing on each bit of area', w: ['How heavy something is', 'How fast something moves', 'How much energy something has'] },
+    { p: 'Two boxes weigh the same. One has a much wider base. Which pushes harder on each bit of floor?', a: 'The narrow one — its force is on a smaller area', w: ['The wide one, because it looks bigger', 'They press the same on each bit', 'Neither presses on the floor'] },
+  ];
   function pressureFormulaQ() {
-    const q = R.pick([
-      { p: 'What is the formula for <b>pressure</b>?', a: 'pressure = force ÷ area', w: ['pressure = force × area', 'pressure = area ÷ force', 'pressure = force + area'] },
-      { p: 'What unit is pressure measured in?', a: 'N/m² (also called pascals, Pa)', w: ['newtons (N)', 'joules (J)', 'metres (m)'] },
-      { p: 'If the force stays the same and the area gets <b>smaller</b>, what happens to the pressure?', a: 'It gets bigger', w: ['It gets smaller', 'It stays the same', 'It becomes zero'] },
-      { p: 'If the force stays the same and the area gets <b>bigger</b>, what happens to the pressure?', a: 'It gets smaller', w: ['It gets bigger', 'It stays the same', 'It doubles'] },
-      { p: 'What does pressure actually mean?', a: 'How much force is pressing on each bit of area', w: ['How heavy something is', 'How fast something moves', 'How much energy something has'] },
-      { p: 'Two boxes weigh the same. One has a much wider base. Which pushes harder on each bit of floor?', a: 'The narrow one — its force is on a smaller area', w: ['The wide one, because it looks bigger', 'They press the same on each bit', 'Neither presses on the floor'] },
-    ]);
+    if (R.chance(0.35)) {
+      const q = R.pick(PF_TEXT);
+      return {
+        prompt: q.p, answer: textAns(q.a, q.accept, 'e.g. force ÷ area'),
+        hint: 'Pressure = force ÷ area. Squeeze the same force onto less area and the pressure shoots up.',
+        working: ['<b>Picture:</b> your weight on a flat shoe vs the same weight on one sharp heel.', '<b>pressure = force ÷ area</b>, measured in N/m².', `Answer: <b>${q.a}</b>.`],
+        finalAnswer: q.a, skill: 'pressure',
+      };
+    }
+    const q = R.pick(PF_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       prompt: q.p, answer: ans(c),

@@ -113,6 +113,21 @@
   }
   const ch = (correct, wrongs, n) => { const c = choice(correct, wrongs, n); return { type: 'choice', value: c.value, choices: c.choices }; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted whenever the answer is "which kind of microbe" (bacteria / a virus / a fungus) */
+  const MICROBE_ACCEPT = { bacteria: ['bacterium', 'a bacterium', 'bacterias'], virus: ['a virus', 'viruses'], fungus: ['a fungus', 'fungi', 'fungus', 'mould', 'mold'] };
+  /** typed synonyms accepted for each of the five spread routes */
+  const ROUTE_ACCEPT = {
+    droplets: ['droplets in the air', 'in the air', 'airborne', 'droplet'],
+    touch: [], food: [], water: [],
+    animals: ['an animal'],
+  };
+  /** typed synonyms accepted for each of the body's own defences */
+  const DEFENCE_ACCEPT = {
+    skin: [], 'mucus in your nose': ['mucus'], 'stomach acid': ['acid'],
+    'tears and spit': ['tears', 'spit', 'tears and saliva'],
+    'white blood cells': ['white blood cell'], 'a scab': ['scab'],
+  };
 
   /* ---------- diagrams ---------- */
   /** relative sizes: virus → bacterium → yeast cell → one of your cells */
@@ -226,13 +241,13 @@
       { p: `Is <b>${m.one}</b> alive?`, a: m.alive, w: MICROBES.map((x) => x.alive), n: 3 },
       { p: `What is <b>${m.one}</b>, exactly?`, a: m.what, w: MICROBES.map((x) => x.what), n: 3 },
       { p: `How big is <b>${m.one}</b>?`, a: m.size, w: MICROBES.map((x) => x.size), n: 3 },
-      { p: `Which microbes cause <b>${m.bad}</b>?`, a: m.name, w: MICROBES.map((x) => x.name), n: 3 },
-      { p: `Which microbes are used for <b>${m.good}</b>?`, a: m.name, w: MICROBES.map((x) => x.name), n: 3 },
+      { p: `Which microbes cause <b>${m.bad}</b>?`, a: m.name, w: MICROBES.map((x) => x.name), n: 3, short: m.key === 'bacteria' ? 'bacteria' : m.key === 'virus' ? 'virus' : 'fungus' },
+      { p: `Which microbes are used for <b>${m.good}</b>?`, a: m.name, w: MICROBES.map((x) => x.name), n: 3, short: m.key === 'bacteria' ? 'bacteria' : m.key === 'virus' ? 'virus' : 'fungus' },
     ];
     const f = R.pick(level === 1 ? forms.slice(0, 2).concat([forms[3]]) : forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, f.n),
+      answer: f.short ? textAns(f.short, MICROBE_ACCEPT[f.short], 'one word') : ch(f.a, f.w, f.n),
       hint: `Think of ${m.one} as ${m.pic}.`,
       working: [`<b>Picture:</b> ${m.one} is ${m.pic}.`, `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'kinds',
@@ -258,7 +273,7 @@
   }
   function aliveQ() {
     const forms = [
-      { p: 'Which microbe is <b>not really alive</b> on its own?', a: 'a virus', w: ['a bacterium', 'a yeast cell', 'a mould'] },
+      { p: 'Which microbe is <b>not really alive</b> on its own?', a: 'a virus', w: ['a bacterium', 'a yeast cell', 'a mould'], short: 'virus', shortAccept: ['a virus', 'viruses'] },
       { p: 'Why do scientists say a virus is not properly alive?', a: 'It cannot feed, grow or make copies by itself — it has to hijack a living cell', w: ['It is too small to be alive', 'It has no colour', 'It dies as soon as it is made'] },
       { p: 'A bacterium can live and multiply in a dish of jelly. Can a virus?', a: 'No — a virus can only copy itself inside a living cell', w: ['Yes, viruses grow in jelly even faster', 'Yes, but only if the jelly is warm', 'No, because viruses need soil'] },
       { p: 'What does a virus need in order to make copies of itself?', a: 'a living cell to hijack', w: ['warm sugary food', 'water and minerals', 'sunlight'] },
@@ -266,7 +281,7 @@
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'one word') : ch(f.a, f.w, 4),
       hint: 'A virus is like a USB stick full of instructions — it does nothing until it is plugged into a computer.',
       working: ['<b>Picture:</b> a virus is a USB stick; your cell is the computer.', '1. Can a USB stick do anything on its own? No.', `So: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'kinds',
@@ -278,7 +293,7 @@
       const want = MNAME[u.m];
       return {
         prompt: `Which kind of microbe do we use to make <b>${u.use}</b>?`,
-        answer: ch(want, ['bacteria', 'a virus', 'a fungus'], 3),
+        answer: textAns(u.m, MICROBE_ACCEPT[u.m], 'one word'),
         hint: 'Yeast and mould are fungi. Anything soured, pickled or rotted down is usually bacteria.',
         working: [`<b>How it works:</b> ${u.how}.`, `So it is <b>${want}</b>.`],
         finalAnswer: want, skill: 'useful',
@@ -310,7 +325,9 @@
     const a = it.good ? 'Useful — we want it' : 'Harmful — we want to stop it';
     return {
       prompt: `Is this microbe <b>useful</b> or <b>harmful</b>: ${it.thing}?`,
-      answer: ch(a, ['Useful — we want it', 'Harmful — we want to stop it'], 2),
+      answer: it.good
+        ? textAns('useful', ['useful — we want it'], 'one word')
+        : textAns('harmful', ['harmful — we want to stop it'], 'one word'),
       hint: 'Ask: does it make something we want, or does it make somebody ill?',
       working: ['<b>Picture:</b> microbes are neighbours — most help, a few break in.', `${cap(it.thing)} is <b>${it.good ? 'useful' : 'harmful'}</b>.`],
       finalAnswer: a, skill: 'useful',
@@ -318,21 +335,14 @@
   }
   function diseaseType(level) {
     const d = R.pick(DISEASES);
-    if (level >= 2 && R.chance(0.35)) {
-      const want = MNAME[d.m];
-      return {
-        prompt: `<b>${cap(d.name)}</b> — which kind of microbe causes it?`,
-        answer: { type: 'text', value: d.m === 'bacteria' ? 'bacteria' : d.m, accept: d.m === 'bacteria' ? ['bacterium', 'a bacterium', 'bacterias'] : d.m === 'virus' ? ['a virus', 'viruses'] : ['a fungus', 'fungi', 'fungus', 'mould', 'mold'], placeholder: 'one word' },
-        hint: 'Colds, flu, measles and chickenpox are viruses. Food poisoning, strep throat and sore infected cuts are bacteria. Itchy skin patches are fungi.',
-        working: [`<b>Picture:</b> three families of microbe — bacteria, viruses, fungi.`, `${cap(d.name)} is caused by <b>${want}</b>.`],
-        finalAnswer: want, skill: 'diseases',
-      };
-    }
     const want = MNAME[d.m];
+    const askShort = level >= 2 && R.chance(0.35);
     return {
-      prompt: `Which kind of microbe causes <b>${d.name}</b>?`,
-      answer: ch(want, ['bacteria', 'a virus', 'a fungus'], 3),
-      hint: 'Coughs, colds and rashes that go round a class are usually viruses; food and cut infections are usually bacteria; itchy skin patches are fungi.',
+      prompt: askShort ? `<b>${cap(d.name)}</b> — which kind of microbe causes it?` : `Which kind of microbe causes <b>${d.name}</b>?`,
+      answer: textAns(d.m, MICROBE_ACCEPT[d.m], 'one word'),
+      hint: askShort
+        ? 'Colds, flu, measles and chickenpox are viruses. Food poisoning, strep throat and sore infected cuts are bacteria. Itchy skin patches are fungi.'
+        : 'Coughs, colds and rashes that go round a class are usually viruses; food and cut infections are usually bacteria; itchy skin patches are fungi.',
       working: [`<b>Picture:</b> three families of microbe — bacteria, viruses, fungi.`, `${cap(d.name)} is caused by <b>${want}</b>.`],
       finalAnswer: want, skill: 'diseases',
     };
@@ -343,7 +353,7 @@
     return {
       visual: level === 1 ? routeSvg(undefined, false) : undefined,
       prompt: `How does <b>${d.name}</b> mostly get from one person to another?`,
-      answer: ch(rt.name, ROUTES.map((x) => x.name), 4),
+      answer: textAns(rt.key, ROUTE_ACCEPT[rt.key], 'one word'),
       hint: 'The five routes are: droplets in the air, touch, food, water, animals.',
       working: ['<b>Picture:</b> the microbe needs a lift from one person to the next.', `For ${d.name}, the lift is <b>${rt.name}</b> — ${rt.how}.`],
       finalAnswer: rt.name, skill: 'spread',
@@ -363,7 +373,7 @@
     }
     return {
       prompt: `Which route are you blocking when you ${rt.brk.split(',')[0]}?`,
-      answer: ch(rt.name, ROUTES.map((x) => x.name), 4),
+      answer: textAns(rt.key, ROUTE_ACCEPT[rt.key], 'one word'),
       hint: 'Picture the microbe trying to make the journey, and ask which step you just stopped.',
       working: [`<b>Picture:</b> ${rt.pic}.`, `That habit blocks the <b>${rt.name}</b> route.`],
       finalAnswer: rt.name, skill: 'break-route',
@@ -394,7 +404,7 @@
     return {
       visual: d.name !== 'a scab' && level <= 2 ? bodySvg(d.name) : undefined,
       prompt: askName ? `Which defence <b>${d.how}</b>?` : `What does <b>${d.name}</b> do to protect you?`,
-      answer: askName ? ch(d.name, DEFENCES.map((x) => x.name), 4) : ch(d.how, DEFENCES.map((x) => x.how), 4),
+      answer: askName ? textAns(d.name, DEFENCE_ACCEPT[d.name], 'a word or two') : ch(d.how, DEFENCES.map((x) => x.how), 4),
       hint: `Think of it as ${d.pic}.`,
       working: [`<b>Picture:</b> your body is a house; ${d.name} is ${d.pic}.`, `So ${d.name} <b>${d.how}</b>.`],
       finalAnswer: askName ? d.name : d.how, skill: 'defences',
@@ -402,17 +412,17 @@
   }
   function defenceOrder() {
     const forms = [
-      { p: 'Which defence stops microbes getting in at all — before they are ever inside you?', a: 'skin', w: ['white blood cells', 'antibodies', 'a fever'] },
-      { p: 'A microbe gets past your skin through a cut. Which defence deals with it now?', a: 'white blood cells inside your blood', w: ['stomach acid', 'the mucus in your nose', 'your tears'] },
-      { p: 'You swallow food with bacteria on it. Which defence meets them first?', a: 'stomach acid', w: ['white blood cells', 'your skin', 'a scab'] },
+      { p: 'Which defence stops microbes getting in at all — before they are ever inside you?', a: 'skin', w: ['white blood cells', 'antibodies', 'a fever'], short: 'skin', shortAccept: [] },
+      { p: 'A microbe gets past your skin through a cut. Which defence deals with it now?', a: 'white blood cells inside your blood', w: ['stomach acid', 'the mucus in your nose', 'your tears'], short: 'white blood cells', shortAccept: ['white blood cells inside your blood', 'white blood cell'] },
+      { p: 'You swallow food with bacteria on it. Which defence meets them first?', a: 'stomach acid', w: ['white blood cells', 'your skin', 'a scab'], short: 'stomach acid', shortAccept: ['acid', 'your stomach acid'] },
       { p: 'You breathe in a lungful of dusty air. Which defence catches the microbes?', a: 'the sticky mucus and tiny hairs in your nose and airways', w: ['stomach acid', 'a scab', 'your tears'] },
-      { p: 'What do white blood cells make that sticks to a microbe and marks it for destruction?', a: 'antibodies', w: ['mucus', 'acid', 'enzymes only'] },
+      { p: 'What do white blood cells make that sticks to a microbe and marks it for destruction?', a: 'antibodies', w: ['mucus', 'acid', 'enzymes only'], short: 'antibodies', shortAccept: ['antibody'] },
       { p: 'Your defences work in two layers. What is the first layer called?', a: 'barriers that keep microbes out — skin, mucus, acid, tears', w: ['white blood cells', 'antibodies', 'vaccines'] },
     ];
     const f = R.pick(forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a word or two') : ch(f.a, f.w, 4),
       hint: 'First the walls (skin, mucus, acid, tears), then the guards inside (white blood cells).',
       working: ['<b>Picture:</b> your body is a house — a fence outside, guards inside.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'defences',
@@ -438,18 +448,18 @@
   }
   function antibioticQ(level) {
     const forms = [
-      { p: 'What do <b>antibiotics</b> kill?', a: 'bacteria', w: ['viruses', 'every kind of microbe', 'only fungi'] },
+      { p: 'What do <b>antibiotics</b> kill?', a: 'bacteria', w: ['viruses', 'every kind of microbe', 'only fungi'], short: 'bacteria', shortAccept: MICROBE_ACCEPT.bacteria },
       { p: 'Why does an antibiotic do nothing at all against a cold?', a: 'A cold is caused by a virus, and a virus is not a living cell for the antibiotic to attack', w: ['Colds are too mild for antibiotics to notice', 'The virus is too big', 'Antibiotics only work in winter'] },
       { p: 'The doctor refuses antibiotics for Harper\'s sore throat because it is viral. Is that right?', a: 'Yes — antibiotics only work on bacteria, so they would do nothing but risk side effects', w: ['No, antibiotics work on everything', 'No, antibiotics would at least shorten it a bit', 'Yes, because antibiotics only work for adults'] },
       { p: 'Why must you finish a whole course of antibiotics, even once you feel better?', a: 'The toughest bacteria survive longest — stop early and they are the ones left to multiply', w: ['The tablets go off if you keep them', 'You will feel ill again immediately if you stop', 'The last tablets are the only ones that work'] },
       { p: 'What are <b>antibiotic-resistant</b> bacteria?', a: 'Bacteria that the antibiotic no longer kills, because the survivors bred more survivors', w: ['Bacteria that have become viruses', 'Bacteria that are bigger than normal', 'Bacteria that only live in hospitals and are harmless'] },
-      { p: 'Where did the first antibiotic, penicillin, come from?', a: 'a mould — a fungus that makes a bacteria-killing chemical', w: ['a bacterium grown in a lab', 'a virus that attacks bacteria', 'a mineral dug out of the ground'] },
-      { p: "What kind of medicine treats athlete's foot?", a: 'an antifungal cream, because it is a fungus', w: ['an antibiotic, because it is bacteria', 'a vaccine, because it is a virus', 'nothing works on it'] },
+      { p: 'Where did the first antibiotic, penicillin, come from?', a: 'a mould — a fungus that makes a bacteria-killing chemical', w: ['a bacterium grown in a lab', 'a virus that attacks bacteria', 'a mineral dug out of the ground'], short: 'a mould', shortAccept: ['mould', 'a fungus', 'fungus', 'mold', 'a mold'] },
+      { p: "What kind of medicine treats athlete's foot?", a: 'an antifungal cream, because it is a fungus', w: ['an antibiotic, because it is bacteria', 'a vaccine, because it is a virus', 'nothing works on it'], short: 'antifungal cream', shortAccept: ['an antifungal cream', 'antifungal'] },
     ];
     const f = R.pick(level === 1 ? forms.slice(0, 2).concat([forms[5]]) : forms);
     return {
       prompt: f.p,
-      answer: ch(f.a, f.w, 4),
+      answer: f.short ? textAns(f.short, f.shortAccept, 'a word or two') : ch(f.a, f.w, 4),
       hint: 'Antibiotics attack things that are alive. A virus is not a living cell — and it hides inside your own cells.',
       working: ['<b>Picture:</b> weedkiller kills living weeds. A virus is not a weed, it is a set of instructions.', '1. Is it bacteria? Then an antibiotic works.', '2. Is it a virus? Then it does not.', `Answer: <b>${f.a}</b>.`],
       finalAnswer: f.a, skill: 'antibiotics',
@@ -462,7 +472,7 @@
       return {
         visual: mouldChartSvg(v),
         prompt: 'Which conditions grew the <b>most</b> mould?',
-        answer: ch('warm and damp', ['warm and dry', 'cold and damp', 'cold and dry'], 4),
+        answer: textAns('warm and damp', ['warm, damp', 'warm & damp'], 'two words'),
         hint: 'Read the tallest bar.',
         working: [`<b>Picture:</b> mould is a living thing — it wants food, warmth and water.`, `Warm+damp = ${v[0]}, warm+dry = ${v[1]}, cold+damp = ${v[2]}, cold+dry = ${v[3]}.`, 'The tallest bar is <b>warm and damp</b>.'],
         finalAnswer: 'warm and damp', skill: 'fair-test',
