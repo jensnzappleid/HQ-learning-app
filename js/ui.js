@@ -18,6 +18,9 @@ window.HL = window.HL || {};
    *  of this: no pad, no hint, no Check gate. */
   const needsWorking = (q) => q.kind === 'word' && !isSci();
   const subjectWord = (n) => (n === 'science' ? 'Science' : 'Maths');
+  /** the sibling app lives next to this one on the same address, so switching keeps the same
+   *  browser storage (candy jars, money box, progress) — and the same child, via ?who= */
+  const siblingHref = () => (isSci() ? './index.html' : './science.html') + location.search;
   const jarTitle = () => subjectWord(HL.subject) + ' candy jar';
   const SUBJ = () => (isSci()
     ? { crumb: 'Science · Year 8', hero: 'Ready for {m} minutes of science?', mixedBlurb: 'A little bit of everything. The app picks topics you need most.',
@@ -74,7 +77,7 @@ window.HL = window.HL || {};
     const totalQ = Object.values(S.get().topics).reduce((a, t) => a + t.attempts, 0);
     const minutes = S.settings().minutes;
     render(`<div class="screen">
-      ${topbar(null, SUBJ().crumb, `<button class="iconbtn" data-go="settings" aria-label="Settings">⚙︎</button>`)}
+      ${topbar(null, SUBJ().crumb, `<a class="iconbtn" href="${siblingHref()}" aria-label="Switch to ${isSci() ? 'Maths' : 'Science'}" title="Switch to ${isSci() ? 'Maths' : 'Science'}">${isSci() ? '🔢' : '🔬'}</a><button class="iconbtn" data-go="settings" aria-label="Settings">⚙︎</button>`)}
       <div class="hero">${HL.animal(SUBJ().mascot, { size: 96, mood: done ? 'cheer' : 'happy' })}
         <div><h1>${greet}, ${esc(name())}!</h1><p class="sub">${done ? 'You have already practised today. Extra practice is a bonus!' : SUBJ().hero.replace('{m}', minutes)}</p></div></div>
       <div class="stat-row">
@@ -166,7 +169,7 @@ window.HL = window.HL || {};
       <div class="card"><h2>${jarTitle().replace(' candy jar', '')} prizes</h2>
         ${earned.length ? `<div class="result-list" style="margin-top:8px">${earned.map((r, i) => `<div class="result-item">${HL.coin(i, 26)}<span class="name">${esc(r.prize)}<br><small style="color:var(--muted)">${new Date(r.date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}</small></span><span class="chip ${r.paid ? 'chip-mint' : 'chip-butter'}">${r.paid ? 'collected \u2713' : 'waiting'}</span><button class="btn" style="min-height:38px;padding:6px 12px" data-act="paid" data-i="${i}">${r.paid ? 'Undo' : 'Mark collected'}</button></div>`).join('')}</div>`
           : `<p style="margin-top:6px;color:var(--muted)">No ${subjectWord(HL.subject).toLowerCase()} prizes yet.</p>`}
-        ${S.otherJars().filter((o) => o.money.prizes).map((o) => `<p style="margin-top:10px;color:var(--muted)">${subjectWord(o.subject)} has <b>${esc(amount(o.money))}</b> from ${o.money.prizes} prize${o.money.prizes === 1 ? '' : 's'}${o.money.waitingPrizes ? ` (${o.money.waitingPrizes} still waiting)` : ''}. Open the ${subjectWord(o.subject)} app to mark those collected.</p>`).join('')}
+        ${S.otherJars().filter((o) => o.money.prizes).map((o) => `<p style="margin-top:10px;color:var(--muted)">${subjectWord(o.subject)} has <b>${esc(amount(o.money))}</b> from ${o.money.prizes} prize${o.money.prizes === 1 ? '' : 's'}${o.money.waitingPrizes ? ` (${o.money.waitingPrizes} still waiting)` : ''}. <a href="${siblingHref()}">Open ${subjectWord(o.subject)}</a> to mark those collected.</p>`).join('')}
       </div>
       <div class="btn-row"><button class="btn btn-primary btn-lg" data-go="candy">See the candy jar</button><button class="btn" data-go="home">Home</button></div>
     </div>`);
@@ -955,7 +958,7 @@ window.HL = window.HL || {};
         <div class="setting"><div class="lbl">Prize<small>Shown to ${esc(st.name)} when the jar is full</small></div><input class="text" id="prizeInput" value="${esc(st.prize)}" maxlength="24"></div>
         <div class="setting"><div class="lbl">Shortest practice that earns candies<small>The timer will not end a practice below this</small></div>${seg('minQuestions', [{ v: 6, l: '6' }, { v: 8, l: '8' }, { v: 10, l: '10' }])}</div>
         <div class="setting"><div class="lbl">${jarTitle()} right now<small>${S.candyState().jar} of ${goal()} · ${S.candyState().lifetime} collected altogether · ${S.unpaidRewards()} prize(s) waiting</small></div><button class="btn" data-go="candy">Open</button></div>
-        ${S.otherJars().map((o) => `<div class="setting"><div class="lbl">${subjectWord(o.subject)} candy jar<small>${o.jar} of ${o.goal} · ${o.lifetime} collected altogether · ${o.unpaid} prize(s) waiting — open the ${subjectWord(o.subject)} app to manage it</small></div></div>`).join('')}
+        ${S.otherJars().map((o) => `<div class="setting"><div class="lbl">${subjectWord(o.subject)} candy jar<small>${o.jar} of ${o.goal} · ${o.lifetime} collected altogether · ${o.unpaid} prize(s) waiting</small></div><a class="btn" href="${siblingHref()}">Open ${subjectWord(o.subject)}</a></div>`).join('')}
       </div>
       <div class="card"><h2>Shared working pad</h2>
         ${HL.sync && HL.sync.available()
