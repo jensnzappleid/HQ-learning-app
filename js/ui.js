@@ -13,6 +13,10 @@ window.HL = window.HL || {};
   const prize = () => S.settings().prize || '$5';
   const name = () => S.settings().name || 'Harper';
   const isSci = () => HL.subject === 'science';
+  /** the working pad (and its guided hint) is a maths thing — showing your algebra/arithmetic
+   *  steps. A science "word problem" is a scenario question, not a calculation, so it gets none
+   *  of this: no pad, no hint, no Check gate. */
+  const needsWorking = (q) => q.kind === 'word' && !isSci();
   const subjectWord = (n) => (n === 'science' ? 'Science' : 'Maths');
   const jarTitle = () => subjectWord(HL.subject) + ' candy jar';
   const SUBJ = () => (isSci()
@@ -423,7 +427,7 @@ window.HL = window.HL || {};
       ${st.keypad && a.type !== 'text' ? keypadHtml(a.type) : ''}`;
     }
     let workingHtml = '';
-    if (q.kind === 'word') {
+    if (needsWorking(q)) {
       // guided the first time she ever meets this idea (the hint, not the answer); every time
       // after that she gets no content, just a nudge for how many steps a full solution takes
       const hintKey = q.skill || (q.topicId + ':word');
@@ -460,7 +464,7 @@ window.HL = window.HL || {};
       </div>
       <p class="footer-note">${q.isRedo ? 'Practice question' : `Question ${session.scoredCount + 1} of ${session.target}`} · ${session.timeUp ? (session.shortBy() ? `${session.shortBy()} more to earn candies` : 'last one') : Math.ceil(session.remainingMs / 60000) + ' min left'}</p>
     </div>`);
-    if (q.kind === 'word') bindWorkpad();
+    if (needsWorking(q)) bindWorkpad();
     const inp = $('#ans'); if (inp && !st.keypad) setTimeout(() => inp.focus(), 50);
     if (timer) clearInterval(timer);
     timer = setInterval(() => {
@@ -626,7 +630,7 @@ window.HL = window.HL || {};
   }
   function check() {
     const q = session.current; if (!q) return;
-    if (q.kind === 'word') {
+    if (needsWorking(q)) {
       if (!padHasInk) { toast('Show your working on the pad first, then check.'); return; }
       const canvas = $('#workpad');
       session.pendingWorking = canvas ? canvas.toDataURL('image/png') : '';
