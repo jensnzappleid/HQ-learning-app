@@ -408,6 +408,7 @@ window.HL = window.HL || {};
   function practice() {
     if (!session) return go('home');
     if (session.isFinished()) return endSession();
+    lastStepResults = [];
     const q = session.current || session.next();
     const t = HL.topics[q.topicId], s = strandOf(t);
     const st = S.settings();
@@ -428,13 +429,26 @@ window.HL = window.HL || {};
     }
     let workingHtml = '';
     if (needsWorking(q)) {
+      const hasSteps = q.steps && q.steps.length > 0;
       // guided the first time she ever meets this idea (the hint, not the answer); every time
-      // after that she gets no content, just a nudge for how many steps a full solution takes
+      // after that she gets no content, just a nudge for how many steps a full solution takes.
+      // Skipped entirely when the question has real step boxes — those already show what to do.
       const hintKey = q.skill || (q.topicId + ':word');
-      const guided = !S.hintSeen(hintKey);
+      const guided = !hasSteps && !S.hintSeen(hintKey);
       const syncOn = HL.sync && HL.sync.available();
+      const stepsHtml = hasSteps ? `<div class="steps-box" id="stepsBox">${q.steps.map((s, i) => `
+        <div class="step-item">
+          <label for="step${i}">Step ${i + 1} — ${esc(s.label)}</label>
+          <div class="step-input-row">
+            <input id="step${i}" class="answer-input step-input" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="?">
+            ${s.unit ? `<span class="unit">${esc(s.unit)}</span>` : ''}
+            <span class="step-mark" id="stepMark${i}"></span>
+          </div>
+          ${s.hint ? `<div class="step-hint">💡 ${esc(s.hint)}</div>` : ''}
+        </div>`).join('')}</div>` : '';
       workingHtml = `<div class="working-row">
-        <div class="working-head"><label for="workpad">Show your working${!guided ? `<span class="hint-note">(aim for about ${Math.max(1, (q.working || []).length)} steps)</span>` : ''}</label>
+        ${stepsHtml}
+        <div class="working-head"><label for="workpad">${hasSteps ? 'Extra working (optional)' : 'Show your working'}${!hasSteps && !guided ? `<span class="hint-note">(aim for about ${Math.max(1, (q.working || []).length)} steps)</span>` : ''}</label>
           <div class="pad-tools">
             <button type="button" class="padtool on" data-pad="pen">✏️ Pen</button>
             <button type="button" class="padtool" data-pad="fix">🟢 Correct it</button>
@@ -631,9 +645,20 @@ window.HL = window.HL || {};
   function check() {
     const q = session.current; if (!q) return;
     if (needsWorking(q)) {
-      if (!padHasInk) { toast('Show your working on the pad first, then check.'); return; }
+      const hasSteps = q.steps && q.steps.length > 0;
+      if (hasSteps) {
+        const empty = q.steps.some((s, i) => !(($(`#step${i}`) || {}).value || '').trim());
+        if (empty) { toast('Fill in every step first, then check.'); return; }
+      } else if (!padHasInk) {
+        toast('Show your working on the pad first, then check.'); return;
+      }
       const canvas = $('#workpad');
       session.pendingWorking = canvas ? canvas.toDataURL('image/png') : '';
+      session.pendingSteps = hasSteps ? q.steps.map((s, i) => {
+        const given = (($(`#step${i}`) || {}).value || '').trim();
+        return { label: s.label, unit: s.unit || '', given, expected: s.value, ok: HL.mark.checkStep(given, s.value, s.tolerance).ok };
+      }) : [];
+      lastStepResults = session.pendingSteps;
     }
     const res = session.answer(currentInput());
     const fb = $('#feedback'), inp = $('#ans');
@@ -641,10 +666,22 @@ window.HL = window.HL || {};
     if (res.status === 'invalid') { toast(res.note); return; }
     showFeedback(res);
   }
+  /** shows a ✓ or a ✗ (with the right value) next to each step box, so she can see exactly
+   *  which step went wrong instead of just "the answer was wrong" */
+  function markSteps() {
+    lastStepResults.forEach((r, i) => {
+      const mark = $(`#stepMark${i}`), inp = $(`#step${i}`);
+      if (!mark) return;
+      if (r.ok) { mark.textContent = '✓'; mark.className = 'step-mark ok'; }
+      else { mark.textContent = `✗ → ${N.fmt(r.expected)}${r.unit ? ' ' + r.unit : ''}`; mark.className = 'step-mark bad'; }
+      if (inp) inp.classList.add(r.ok ? 'ok' : 'bad');
+    });
+  }
   function showFeedback(res) {
     const cur = session.current; // null once the question is finished (correct / reveal)
     const fb = $('#feedback'), inp = $('#ans'), actions = $('#actions');
     const t = HL.topics[lastQuestion.topicId];
+    markSteps();
     if (res.status === 'correct') {
       if (inp) inp.classList.add('ok');
       document.querySelectorAll('.choice.selected').forEach((c) => c.classList.add('ok'));
@@ -669,7 +706,7 @@ window.HL = window.HL || {};
     actions.innerHTML = `<button class="btn btn-primary btn-lg" data-act="next">${btn}</button><button class="btn" data-go-learn="${t.id}">📖 Read the notes</button>`;
     $('[data-act="next"]').focus();
   }
-  let lastQuestion = null;
+  let lastQuestion = null, lastStepResults = [];
   function next() {
     selectedChoice = null;
     if (session.isFinished()) return endSession();
@@ -805,6 +842,11 @@ window.HL = window.HL || {};
       <div class="m-q">${m.prompt}</div>
       <div class="m-row"><span class="m-label">She put</span><span class="m-given">${(m.given || []).map((g) => `<b>${esc(g)}</b>`).join(' then ') || '—'}</span></div>
       <div class="m-row"><span class="m-label">Answer</span><span class="m-answer">${m.answer}</span></div>
+      ${(m.shownSteps || []).length ? `<div class="steps-box" style="margin:10px 0 0">${m.shownSteps.map((r) => `
+        <div class="step-item"><label>${esc(r.label)}</label><div class="step-input-row">
+          <span>${esc(r.given) || '—'}${r.unit ? ' ' + esc(r.unit) : ''}</span>
+          <span class="step-mark ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : `✗ → ${N.fmt(r.expected)}${r.unit ? ' ' + esc(r.unit) : ''}`}</span>
+        </div></div>`).join('')}</div>` : ''}
       ${m.shownWorking ? `<div class="her-working"><span class="m-label">Her working</span><img src="${m.shownWorking}" alt="Her working, drawn on the pad"></div>` : ''}
       <details class="m-working"${opts.open ? ' open' : ''}><summary>How to work it out</summary><div class="working">${(m.working || []).map((w) => `<div>${w}</div>`).join('')}</div></details>
     </div>`;

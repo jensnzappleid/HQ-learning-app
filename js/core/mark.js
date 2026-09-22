@@ -37,4 +37,14 @@ window.HL = window.HL || {};
     }
     return { ok: false };
   };
+  /** the same lenient number parsing + tolerance the main answer box uses, for checking one
+   *  intermediate working-out step against its expected value. */
+  HL.mark.checkStep = function (raw, expected, tolerance) {
+    const r = String(raw == null ? '' : raw).trim();
+    if (!r) return { ok: false, empty: true };
+    const v = N.parseNumber(r);
+    if (v == null) return { ok: false, note: 'Type a number.' };
+    const tol = tolerance != null ? tolerance : 1e-6;
+    return { ok: Math.abs(v - expected) <= tol + 1e-9 };
+  };
 })(window.HL);

@@ -3,6 +3,10 @@
 (function (HL) {
   const R = HL.rng, N = HL.num;
   const numAns = (value, unit) => Number.isInteger(value) ? { type: 'number', value, unit } : { type: 'number', value, unit, tolerance: 0.001 };
+  /** one checkable checkpoint on the way to the final answer — an input box of its own, with its
+   *  own hint. Only for word problems with a real intermediate stage; a one-formula problem has
+   *  nothing to check before the final answer, so it gets no steps at all. */
+  const stepOf = (label, value, unit, hint) => ({ label, hint, value, unit, tolerance: Number.isInteger(value) ? undefined : 0.001 });
   const PI = 3.14;
   const PI_NOTE = 'Use π = 3.14 and round to 1 decimal place.';
   /** answer worked out with 3.14 and rounded to 1 dp — same tolerance rule as circles.js */
@@ -568,6 +572,10 @@
           prompt: `A classroom wall is ${l} m wide and ${N.fmt(h)} m high. A door ${N.fmt(dw)} m wide and ${N.fmt(dh)} m high is not painted. What area gets painted?`,
           answer: numAns(A, 'm²'),
           hint: 'Whole wall area first, then take the door area off.',
+          steps: [
+            stepOf('Wall area', N.round(l * h, 2), 'm²', 'width × height'),
+            stepOf('Door area', N.round(dw * dh, 2), 'm²', 'width × height'),
+          ],
           working: [
             `Wall: ${l} × ${N.fmt(h)} = ${N.fmt(N.round(l * h, 2))} m².`,
             `Door: ${N.fmt(dw)} × ${N.fmt(dh)} = ${N.fmt(N.round(dw * dh, 2))} m².`,
@@ -586,6 +594,11 @@
           visual: lSvg(W, H, w, h, 'm'),
           answer: numAns(total, '$'),
           hint: 'Big rectangle minus the corner gives the area. Then multiply the area by the price per m².',
+          steps: [
+            stepOf('Big rectangle area', W * H, 'm²', 'length × width'),
+            stepOf('Corner cut out', w * h, 'm²', 'length × width of the missing piece'),
+            stepOf('Lawn area', A, 'm²', 'big rectangle minus the corner'),
+          ],
           working: [
             `Big rectangle: ${W} × ${H} = ${W * H} m².`,
             `Corner taken out: ${w} × ${h} = ${w * h} m².`,
@@ -604,6 +617,7 @@
           visual: trapSvg(a, b, h, 'm', slantFor(a, b, h)),
           answer: numAns(A, 'm²'),
           hint: 'Average the two parallel sides, then multiply by the distance between them. Ignore the slanted side.',
+          steps: [stepOf('Average of the parallel sides', N.round((a + b) / 2, 2), 'm', '(a + b) ÷ 2')],
           working: [`Average the parallel sides: (${a} + ${b}) ÷ 2 = ${N.fmt((a + b) / 2)} m.`, `Multiply by the height: ${N.fmt((a + b) / 2)} × ${h} = ${N.fmt(A)}.`, `Area = <b>${N.fmt(A)} m²</b>.`],
           finalAnswer: `${N.fmt(A)} m²`,
         };
@@ -616,6 +630,10 @@
           visual: trapSvg(a, b, h, 'm', slantFor(a, b, h)),
           answer: numAns(total, '$'),
           hint: 'Find the trapezium area first: average the parallel sides, then times the height. Then multiply by the price.',
+          steps: [
+            stepOf('Average of the parallel sides', N.round((a + b) / 2, 2), 'm', '(a + b) ÷ 2'),
+            stepOf('Trapezium area', A, 'm²', 'average × height'),
+          ],
           working: [`Average: (${a} + ${b}) ÷ 2 = ${N.fmt((a + b) / 2)} m.`, `Area = ${N.fmt((a + b) / 2)} × ${h} = ${N.fmt(A)} m².`, `${N.fmt(A)} × $${cost} = $${N.fmt(total)}.`, `<b>$${N.fmt(total)}</b>.`],
           finalAnswer: `$${N.fmt(total)}`,
         };
@@ -628,6 +646,7 @@
           visual: kiteSvg(d1, d2, 'cm', true),
           answer: numAns(A, 'cm²'),
           hint: 'Area of a kite = ½ × one diagonal × the other diagonal.',
+          steps: [stepOf('Both diagonals multiplied together', d1 * d2, 'cm²', 'before halving')],
           working: [`Area = ½ × ${d1} × ${d2}.`, `${d1} × ${d2} = ${N.fmt(d1 * d2)}, and half of that is ${N.fmt(A)}.`, `<b>${N.fmt(A)} cm²</b> of fabric.`],
           finalAnswer: `${N.fmt(A)} cm²`,
         };
@@ -642,6 +661,10 @@
           visual: shadedPathSvg(l, w, p, 'm', what),
           answer: numAns(A, 'm²'),
           hint: `The path goes on <b>both</b> sides, so the outside rectangle is ${N.fmt(2 * p)} m longer and ${N.fmt(2 * p)} m wider.`,
+          steps: [
+            stepOf('Outside rectangle area', N.round(OL * OW, 2), 'm²', `(${l} + ${N.fmt(2 * p)}) × (${w} + ${N.fmt(2 * p)})`),
+            stepOf(`The ${what}'s own area`, N.round(l * w, 2), 'm²', 'length × width'),
+          ],
           working: [
             `Outside rectangle: ${l} + ${N.fmt(2 * p)} = ${N.fmt(OL)} m by ${w} + ${N.fmt(2 * p)} = ${N.fmt(OW)} m.`,
             `Whole outside area: ${N.fmt(OL)} × ${N.fmt(OW)} = ${N.fmt(OL * OW)} m².`,
@@ -661,6 +684,10 @@
           visual: shadedRectSvg(L, W, l, w, 'cm'),
           answer: numAns(A, 'cm²'),
           hint: 'Work out the whole frame area, then take off the photo area. The border adds to both ends of each side.',
+          steps: [
+            stepOf('Whole frame area', L * W, 'cm²', 'the border adds to both ends of each side'),
+            stepOf('Photo area', l * w, 'cm²', 'length × width'),
+          ],
           working: [
             `Whole frame: ${l} + ${2 * b} = ${L} cm by ${w} + ${2 * b} = ${W} cm.`,
             `Frame area: ${L} × ${W} = ${N.fmt(L * W)} cm².`,
@@ -679,6 +706,10 @@
           visual: lSvg(W, H, w, h, 'm', { corner: R.pick(['tr', 'tl', 'br', 'bl']), hide: ['top', 'right'] }),
           answer: numAns(P, 'm'),
           hint: 'A missing side is the long side minus the piece that was cut out. Find both, then add all six sides.',
+          steps: [
+            stepOf('Missing side 1', W - w, 'm', 'the long side minus the piece cut out'),
+            stepOf('Missing side 2', H - h, 'm', 'the other long side minus the piece cut out'),
+          ],
           working: [
             `Missing side 1: ${W} − ${w} = ${W - w} m.`,
             `Missing side 2: ${H} − ${h} = ${H - h} m.`,
@@ -706,6 +737,7 @@
           prompt: `${name}'s family fences a ${l} m by ${w} m rectangular paddock. Fencing costs $${cost} per metre. What is the total cost?`,
           answer: numAns(total, '$'),
           hint: 'Find the perimeter first, then multiply by the cost per metre.',
+          steps: [stepOf('Perimeter', P, 'm', '2 × (length + width)')],
           working: [`Perimeter = 2 × (${l} + ${w}) = ${P} m.`, `${P} × $${cost} = $${N.fmt(total)}.`, `Total cost: <b>$${N.fmt(total)}</b>.`],
           finalAnswer: `$${N.fmt(total)}`,
         };
@@ -717,6 +749,7 @@
           prompt: `A rectangular paddock is ${l} m by ${w} m. It is fenced all the way around except for a ${gate} m gap for a gate. How many metres of fencing are needed?`,
           answer: numAns(P, 'm'),
           hint: 'Find the full perimeter, then take away the gate gap.',
+          steps: [stepOf('Full perimeter (before the gate)', 2 * (l + w), 'm', '2 × (length + width)')],
           working: [`Perimeter = 2 × (${l} + ${w}) = ${2 * (l + w)} m.`, `Take away the gate: ${2 * (l + w)} − ${gate} = ${P}.`, `<b>${P} m</b> of fencing.`],
           finalAnswer: `${P} m`,
         };
@@ -749,6 +782,7 @@
           prompt: `A classroom floor is ${l} m by ${w} m. Carpet costs $${cost} per square metre. How much will it cost to carpet the whole room?`,
           answer: numAns(total, '$'),
           hint: 'Find the area first, then multiply by the price per m².',
+          steps: [stepOf('Floor area', A, 'm²', 'length × width')],
           working: [`Area = ${l} × ${w} = ${A} m².`, `${A} × $${cost} = $${N.fmt(total)}.`, `<b>$${N.fmt(total)}</b>.`],
           finalAnswer: `$${N.fmt(total)}`,
         };
@@ -781,6 +815,10 @@
           prompt: `A wall is ${l} m wide and ${N.fmt(h)} m high. It has a window ${N.fmt(wl)} m by ${N.fmt(wh)} m that will not be painted. What area needs painting?`,
           answer: numAns(A, 'm²'),
           hint: 'Find the whole wall area, then take away the window area.',
+          steps: [
+            stepOf('Whole wall area', N.round(l * h, 2), 'm²', 'width × height'),
+            stepOf('Window area', N.round(wl * wh, 2), 'm²', 'width × height'),
+          ],
           working: [`Wall: ${l} × ${N.fmt(h)} = ${N.fmt(l * h)} m².`, `Window: ${N.fmt(wl)} × ${N.fmt(wh)} = ${N.fmt(wl * wh)} m².`, `${N.fmt(l * h)} − ${N.fmt(wl * wh)} = ${N.fmt(A)}.`, `<b>${N.fmt(A)} m²</b> to paint.`],
           finalAnswer: `${N.fmt(A)} m²`,
         };
@@ -803,6 +841,7 @@
           prompt: `A netball court is ${N.fmt(l)} m by ${N.fmt(w)} m. At training ${name} jogs ${laps} laps around the outside of the court. How far is that?`,
           answer: numAns(d, 'm'),
           hint: 'One lap is the perimeter. Multiply by the number of laps.',
+          steps: [stepOf('Perimeter (one lap)', P, 'm', '2 × (length + width)')],
           working: [`Perimeter = 2 × (${N.fmt(l)} + ${N.fmt(w)}) = ${N.fmt(P)} m.`, `${laps} × ${N.fmt(P)} = ${N.fmt(d)}.`, `<b>${N.fmt(d)} m</b>.`],
           finalAnswer: `${N.fmt(d)} m`,
         };
@@ -837,6 +876,7 @@
           prompt: `A triangular garden bed has a base of ${b} m and a height of ${h} m. Bark costs $${cost} per square metre. How much does it cost to cover the whole bed?`,
           answer: numAns(total, '$'),
           hint: 'Find the triangle area first (½ × base × height), then multiply by the cost.',
+          steps: [stepOf('Triangle area', N.round(A, 2), 'm²', '½ × base × height')],
           working: [`Area = ½ × ${b} × ${h} = ${N.fmt(A)} m².`, `${N.fmt(A)} × $${cost} = $${N.fmt(total)}.`, `<b>$${N.fmt(total)}</b>.`],
           finalAnswer: `$${N.fmt(total)}`,
         };
@@ -849,6 +889,10 @@
           visual: lSvg(W, H, w, h, 'm'),
           answer: numAns(A, 'm²'),
           hint: 'Big rectangle area minus the cut-out corner.',
+          steps: [
+            stepOf('Big rectangle area', W * H, 'm²', 'length × width'),
+            stepOf('Cut-out area', w * h, 'm²', 'length × width of the missing piece'),
+          ],
           working: [`Big rectangle: ${W} × ${H} = ${W * H}.`, `Cut-out: ${w} × ${h} = ${w * h}.`, `${W * H} − ${w * h} = ${A}.`, `<b>${A} m²</b>.`],
           finalAnswer: `${A} m²`,
         };

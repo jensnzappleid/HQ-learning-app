@@ -461,6 +461,15 @@ input.text { font: inherit; font-weight: 800; padding: 10px 14px; border-radius:
 .sync-chip { margin: 8px 0 6px; font-size: .8rem; color: var(--muted); background: var(--surface-2);
   border-radius: 999px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px; }
 .sync-chip b { color: var(--ink); letter-spacing: .08em; }
+.steps-box { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 16px; }
+.step-item { padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); border: 2px solid var(--line); }
+.step-item label { display: block; font-weight: 800; font-size: .88rem; color: var(--muted); margin-bottom: 6px; }
+.step-input-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.step-input { flex: 1; min-width: 100px; font-size: 1.15rem; padding: 8px 12px; min-height: 46px; }
+.step-mark { font-weight: 800; font-size: .9rem; white-space: nowrap; }
+.step-mark.ok { color: var(--good); }
+.step-mark.bad { color: var(--warn); }
+.step-hint { margin-top: 6px; font-size: .82rem; color: var(--faint); }
 .her-working { margin-top: 10px; }
 .her-working .m-label { display: block; margin-bottom: 4px; }
 .her-working img { max-width: 100%; border-radius: var(--r-sm); border: 1px solid var(--line); display: block; background: #fff; }

@@ -37,7 +37,14 @@ const getJson = (u) => new Promise((res, rej) => http.get(u, (r) => { let d = ''
     c.dispatchEvent(new PointerEvent('pointermove',Object.assign({},o,{clientX:x+15,clientY:y+8})));
     c.dispatchEvent(new PointerEvent('pointerup',o));
     return true;})()`);
-  const drawPadIfWord = async () => { if ((await ev(`HL.__current() && HL.__current().kind`)) === 'word') await drawPad(); };
+  // a stepped word question gates Check on every step box being filled, not the pad — fill them
+  // with their real expected values (the pad stays optional scratch space when steps exist)
+  const drawPadIfWord = async () => {
+    if ((await ev(`HL.__current() && HL.__current().kind`)) !== 'word') return;
+    const stepCount = await ev(`(HL.__current().steps || []).length`);
+    if (stepCount > 0) { for (let s = 0; s < stepCount; s++) await ev(`document.getElementById('step${s}').value = String(HL.__current().steps[${s}].value)`); }
+    else await drawPad();
+  };
   while (n < 30) {
     let info = await ev(`(function(){const p=document.getElementById('prompt');if(!p)return null;return {choice:!!document.getElementById('choices'), prompt:p.textContent.slice(0,60)}})()`);
     if (!info && await ev(`!!document.querySelector('.breakscreen')`)) {   // halfway wiggle break

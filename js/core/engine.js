@@ -15,7 +15,8 @@ window.HL = window.HL || {};
       // a resting (already-mastered) topic practised "anyway" is real practice, but it does not
       // pay candies — otherwise a fresh day would quietly undo the point of resting it at all
       this.noReward = !!cfg.noReward;
-      this.pendingWorking = null;   // her typed-out steps for the CURRENT word question, set by the UI
+      this.pendingWorking = null;   // her drawn working for the CURRENT word question, set by the UI
+      this.pendingSteps = null;     // her per-step checkpoint results for the CURRENT question, set by the UI
       this.history = [];          // { topicId, level, kind, firstTry, correct, attempts, prompt, isRedo }
       /* A wrong answer is marked wrong there and then — no second guess at the same numbers, which
        * is what let a lucky guess pay. Instead the working is shown and the SAME kind of question
@@ -181,8 +182,10 @@ window.HL = window.HL || {};
         prompt: q.prompt, visual: q.visual || '', given: this.given.slice(),
         finalAnswer: q.finalAnswer, working: q.working || [],
         shownWorking: q.kind === 'word' ? (this.pendingWorking || '') : '',
+        shownSteps: q.kind === 'word' ? (this.pendingSteps || []) : [],
       });
       this.pendingWorking = null;
+      this.pendingSteps = null;
       this.kindsSoFar[q.kind]++;
       // adapt the level on what she does, corrections included — they are real evidence
       if (correct) {
@@ -214,6 +217,7 @@ window.HL = window.HL || {};
         topicId: h.topicId, topicName: (HL.topics[h.topicId] || {}).name || h.topicId, level: h.level, kind: h.kind,
         prompt: h.prompt, visual: h.visual, given: h.given, answer: h.finalAnswer, working: h.working,
         gotThere: h.correct, flagged: !!h.flagged, redoAttempts: h.redoAttempts || 0, shownWorking: h.shownWorking || '',
+        shownSteps: h.shownSteps || [],
       }));
       // three misses in a row on the same idea: worth a grown-up's attention, not just "she got it wrong"
       const flagged = mistakes.filter((m) => m.flagged);
