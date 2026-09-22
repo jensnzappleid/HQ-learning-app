@@ -1,5 +1,5 @@
 /* Harper Learning — offline cache. Bump VERSION whenever files change. */
-const VERSION = 'hl-v18';
+const VERSION = 'hl-v19';
 const ASSETS = ['./', './index.html', './science.html', './manifest.webmanifest', './manifest-science.webmanifest', './icons/icon-science.svg', './icons/icon-science-180.png', './icons/icon-science-512.png', './js/art/animals-science.js', './js/art/jar-images.js', './js/art/candy.js', './js/art/piggy-image.js', './js/art/piggy.js', './js/art/sound.js', './css/app.css', './icons/icon.svg', './icons/icon-180.png', './icons/icon-512.png',
   './js/core/rng.js', './js/core/num.js', './js/core/registry.js', './js/core/mark.js', './js/core/store.js', './js/core/engine.js', './js/core/sync-config.js', './js/core/sync.js', './js/art/animal-images.js', './js/art/animals.js', './js/ui.js'];
 self.addEventListener('install', (e) => {

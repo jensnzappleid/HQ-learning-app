@@ -26,8 +26,8 @@
 
   const STATIC = [
     { p: 'Harper rubs a balloon on her jumper. What moves from the jumper to the balloon?', a: 'Electrons (tiny negative charges)', w: ['Protons', 'Whole atoms', 'Nothing moves'] },
-    { p: 'What happens when two <b>negatively</b> charged balloons are brought together?', a: 'They push each other apart (repel)', w: ['They pull together (attract)', 'Nothing happens', 'They swap charges'] },
-    { p: 'What happens when a <b>positive</b> and a <b>negative</b> charge are brought together?', a: 'They pull together (attract)', w: ['They push apart (repel)', 'Nothing happens', 'They both become neutral'] },
+    { p: 'What happens when two <b>negatively</b> charged balloons are brought together?', a: 'They push each other apart (repel)', w: ['They pull together (attract)', 'Nothing happens', 'They swap charges'], short: 'repel', shortAccept: ['push apart', 'they repel', 'repel each other', 'push each other away'] },
+    { p: 'What happens when a <b>positive</b> and a <b>negative</b> charge are brought together?', a: 'They pull together (attract)', w: ['They push apart (repel)', 'Nothing happens', 'They both become neutral'], short: 'attract', shortAccept: ['pull together', 'they attract', 'attract each other'] },
     { p: 'Why does a charged balloon stick to the wall?', a: 'It attracts the opposite charges in the wall', w: ['It is sticky from rubbing', 'The wall is magnetic', 'Air pressure holds it'] },
     { p: 'Why does Harper\'s hair stand on end after the balloon is rubbed on it?', a: 'Every hair gets the same charge, and like charges repel', w: ['The hairs get heavier', 'The balloon is magnetic', 'The hairs are attracted to each other'] },
     { p: 'What is lightning?', a: 'A huge spark of static electricity', w: ['A magnetic force', 'Light from the sun reflecting', 'Sound turning into light'] },
@@ -44,6 +44,14 @@
   }
   const ans = (c) => ({ type: 'choice', value: c.value, choices: c.choices });
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const textAns = (value, accept, placeholder) => ({ type: 'text', value, accept: accept || [], placeholder: placeholder || 'type your answer' });
+  /** typed synonyms accepted for each component name, used wherever she has to type the name
+   *  herself instead of picking it from a list. */
+  const PART_ACCEPT = {
+    cell: ['a cell'], battery: ['batteries', 'a battery'], lamp: ['light bulb', 'bulb', 'a lamp', 'the lamp', 'light'],
+    switch: ['a switch'], motor: ['a motor'], buzzer: ['a buzzer'], resistor: ['a resistor'],
+    ammeter: ['amp meter', 'an ammeter'], voltmeter: ['volt meter', 'a voltmeter'],
+  };
 
   /* ---------- circuit symbols (all drawn horizontally, 40 px wide) ---------- */
   function sym(type, x, y, withGap) {
@@ -149,11 +157,10 @@
   function nameSymbol() {
     const t = R.pick(SYMBOL_TYPES);
     const name = SYMBOL_NAME[t];
-    const c = choice(name, PART_NAMES, 4);
     return {
       visual: symbolRow([t]),
       prompt: 'What component does this circuit symbol show?',
-      answer: ans(c),
+      answer: textAns(name, PART_ACCEPT[name], 'one word'),
       hint: 'A circle with a cross is a lamp; a circle with M is a motor; long line + short fat line is a cell.',
       working: ['<b>Picture:</b> every component has one agreed symbol so anyone can read the diagram.', `This one is the symbol for a <b>${name}</b>.`],
       finalAnswer: name, skill: 'symbols',
@@ -186,11 +193,10 @@
   }
   function seriesOrParallel() {
     const isParallel = R.chance(0.5);
-    const c = choice(isParallel ? 'Parallel' : 'Series', ['Series', 'Parallel'], 2);
     return {
       visual: isParallel ? parallelSvg({ caption: 'read the circuit' }) : seriesSvg(['lamp', 'lamp'], { caption: 'read the circuit' }),
       prompt: 'Is this circuit in <b>series</b> or in <b>parallel</b>?',
-      answer: ans(c),
+      answer: textAns(isParallel ? 'parallel' : 'series', [], 'one word'),
       hint: 'Series = one single loop, everything in a line. Parallel = the current has more than one path to choose.',
       working: [
         '<b>Picture:</b> series is a single-lane road; parallel is a road that splits into two lanes and joins up again.',
@@ -202,11 +208,12 @@
   function removeLamp() {
     const isParallel = R.chance(0.5);
     const correct = isParallel ? 'It stays on, just the same' : 'It goes out too';
-    const c = choice(correct, ['It goes out too', 'It stays on, just the same', 'It gets brighter and then breaks', 'It flashes on and off'], 4);
     return {
       visual: isParallel ? parallelSvg({ labels: true, caption: 'two lamps in parallel' }) : seriesSvg(['lamp', 'lamp'], { labels: true, caption: 'two lamps in series' }),
-      prompt: `In this circuit, <b>lamp 1 is taken out</b>. What happens to lamp 2?`,
-      answer: ans(c),
+      prompt: `In this circuit, <b>lamp 1 is taken out</b>. What happens to lamp 2? (stays on / goes out)`,
+      answer: isParallel
+        ? textAns('stays on', ['stays the same', 'same', 'on', 'still on', 'stays lit'], 'stays on / goes out')
+        : textAns('goes out', ['turns off', 'off', 'goes off', 'goes out too', 'stops'], 'stays on / goes out'),
       hint: isParallel ? 'In parallel, each lamp has its own complete loop back to the cell.' : 'In series there is only one loop — break it anywhere and the whole thing stops.',
       working: [
         '<b>Picture:</b> series = one single-lane road; parallel = two separate lanes.',
@@ -222,11 +229,10 @@
     const willLight = kind === 'closed' || kind === 'ok';
     const top = kind === 'open' ? ['lamp', 'switch-open'] : kind === 'closed' ? ['lamp', 'switch-closed'] : ['lamp'];
     const vis = seriesSvg(top, { broken: kind === 'broken', caption: 'will the lamp light?' });
-    const c = choice(willLight ? 'Yes — the circuit is complete' : 'No — the circuit is not complete', ['Yes — the circuit is complete', 'No — the circuit is not complete'], 2);
     return {
       visual: vis,
-      prompt: 'Look at the circuit. Will the lamp light up?',
-      answer: ans(c),
+      prompt: 'Look at the circuit. Will the lamp light up? (yes / no)',
+      answer: textAns(willLight ? 'yes' : 'no'),
       hint: 'Trace your finger all the way round from one end of the cell back to the other. Any gap at all and nothing flows.',
       working: [
         '<b>Picture:</b> the current is like water in a loop of pipe — one gap and the whole flow stops.',
@@ -239,10 +245,9 @@
   function conductorQ() {
     const m = R.pick(MATERIALS);
     const correct = m.c ? 'A conductor' : 'An insulator';
-    const c = choice(correct, ['A conductor', 'An insulator'], 2);
     return {
       prompt: `Is <b>${m.m}</b> a conductor or an insulator of electricity?`,
-      answer: ans(c),
+      answer: textAns(m.c ? 'conductor' : 'insulator', m.c ? ['a conductor'] : ['an insulator'], 'one word'),
       hint: 'Metals conduct (and so does the graphite in a pencil). Plastic, rubber, wood, glass and air do not.',
       working: [
         '<b>Picture:</b> the copper inside a cable carries the current; the plastic round the outside keeps you safe.',
@@ -252,19 +257,31 @@
       finalAnswer: correct, skill: 'conductors',
     };
   }
+  const CV_TEXT = [
+    { p: 'What unit is <b>current</b> measured in?', a: 'amps', accept: ['amp', 'a', 'ampere', 'amperes'], full: 'amps (A)' },
+    { p: 'What unit is <b>voltage</b> measured in?', a: 'volts', accept: ['volt', 'v'], full: 'volts (V)' },
+    { p: 'Which instrument measures current?', a: 'ammeter', accept: ['an ammeter', 'amp meter'], full: 'an ammeter' },
+    { p: 'Which instrument measures voltage?', a: 'voltmeter', accept: ['a voltmeter', 'volt meter'], full: 'a voltmeter' },
+    { p: 'What does a <b>resistor</b> do to the current?', a: 'smaller', accept: ['makes it smaller', 'decreases it', 'reduces it', 'less'], full: 'Makes it smaller' },
+  ];
+  const CV_CHOICE = [
+    { p: 'What is an electric <b>current</b>?', a: 'A flow of charge (electrons) round the circuit', w: ['The push that makes charge flow', 'The energy stored in the cell', 'The heat made by the wires'] },
+    { p: 'What is <b>voltage</b>?', a: 'The push the cell gives to the current', w: ['The flow of charge itself', 'The number of lamps', 'The resistance of the wire'] },
+    { p: 'You add a second cell to a circuit with one lamp. What happens?', a: 'A bigger push, so more current and a brighter lamp', w: ['A smaller current and a dimmer lamp', 'Nothing changes', 'The lamp goes out'] },
+    { p: 'You add a second lamp <b>in series</b> with the first. What happens?', a: 'Both lamps are dimmer — the current is shared round one loop', w: ['Both lamps get brighter', 'Nothing changes', 'Only the first lamp lights'] },
+    { p: 'Which way does a circuit have to be for a current to flow?', a: 'A complete loop with no gaps', w: ['Any shape, gaps are fine', 'A straight line', 'It must have two cells'] },
+  ];
   function currentVoltage() {
-    const q = R.pick([
-      { p: 'What is an electric <b>current</b>?', a: 'A flow of charge (electrons) round the circuit', w: ['The push that makes charge flow', 'The energy stored in the cell', 'The heat made by the wires'] },
-      { p: 'What is <b>voltage</b>?', a: 'The push the cell gives to the current', w: ['The flow of charge itself', 'The number of lamps', 'The resistance of the wire'] },
-      { p: 'What unit is <b>current</b> measured in?', a: 'amps (A)', w: ['volts (V)', 'joules (J)', 'ohms per second'] },
-      { p: 'What unit is <b>voltage</b> measured in?', a: 'volts (V)', w: ['amps (A)', 'joules (J)', 'newtons (N)'] },
-      { p: 'Which instrument measures current?', a: 'an ammeter', w: ['a voltmeter', 'a thermometer', 'a newton meter'] },
-      { p: 'Which instrument measures voltage?', a: 'a voltmeter', w: ['an ammeter', 'a stopwatch', 'a thermometer'] },
-      { p: 'You add a second cell to a circuit with one lamp. What happens?', a: 'A bigger push, so more current and a brighter lamp', w: ['A smaller current and a dimmer lamp', 'Nothing changes', 'The lamp goes out'] },
-      { p: 'You add a second lamp <b>in series</b> with the first. What happens?', a: 'Both lamps are dimmer — the current is shared round one loop', w: ['Both lamps get brighter', 'Nothing changes', 'Only the first lamp lights'] },
-      { p: 'What does a <b>resistor</b> do to the current?', a: 'Makes it smaller', w: ['Makes it bigger', 'Stops it completely', 'Changes it into voltage'] },
-      { p: 'Which way does a circuit have to be for a current to flow?', a: 'A complete loop with no gaps', w: ['Any shape, gaps are fine', 'A straight line', 'It must have two cells'] },
-    ]);
+    if (R.chance(0.5)) {
+      const q = R.pick(CV_TEXT);
+      return {
+        prompt: q.p, answer: textAns(q.a, q.accept, 'one word'),
+        hint: 'Current = the flow (amps). Voltage = the push (volts). A cell gives the push.',
+        working: ['<b>Picture:</b> water in a pipe — voltage is the pump\'s push, current is how much water flows past each second.', `Answer: <b>${q.full}</b>.`],
+        finalAnswer: q.full, skill: 'current',
+      };
+    }
+    const q = R.pick(CV_CHOICE);
     const c = choice(q.a, q.w, 4);
     return {
       prompt: q.p, answer: ans(c),
@@ -275,9 +292,9 @@
   }
   function staticQ() {
     const q = R.pick(STATIC);
-    const c = choice(q.a, q.w, 4);
     return {
-      prompt: q.p, answer: ans(c),
+      prompt: q.p,
+      answer: q.short ? textAns(q.short, q.shortAccept, 'one word') : ans(choice(q.a, q.w, 4)),
       hint: 'Rubbing moves tiny negative electrons from one thing to the other. Like charges repel, opposites attract.',
       working: [
         '<b>Picture:</b> a balloon rubbed on a jumper steals electrons and becomes negative; the jumper is left positive.',
@@ -292,10 +309,11 @@
     const other = { cells: R.int(1, 3), lamps: R.int(1, 3) };
     while (other.cells === cells && other.lamps === lamps) other.lamps = R.int(1, 3);
     const brighter = (cells / lamps) > (other.cells / other.lamps) ? 'A' : (cells / lamps) < (other.cells / other.lamps) ? 'B' : 'Same';
-    const c = choice(brighter === 'A' ? 'Circuit A' : brighter === 'B' ? 'Circuit B' : 'They are the same brightness', ['Circuit A', 'Circuit B', 'They are the same brightness'], 3);
     return {
-      prompt: `Circuit A: <b>${cells} cell${cells > 1 ? 's' : ''}</b> and <b>${lamps} lamp${lamps > 1 ? 's' : ''}</b> in series. Circuit B: <b>${other.cells} cell${other.cells > 1 ? 's' : ''}</b> and <b>${other.lamps} lamp${other.lamps > 1 ? 's' : ''}</b> in series. Which lamps are brighter?`,
-      answer: ans(c),
+      prompt: `Circuit A: <b>${cells} cell${cells > 1 ? 's' : ''}</b> and <b>${lamps} lamp${lamps > 1 ? 's' : ''}</b> in series. Circuit B: <b>${other.cells} cell${other.cells > 1 ? 's' : ''}</b> and <b>${other.lamps} lamp${other.lamps > 1 ? 's' : ''}</b> in series. Which lamps are brighter? (A / B / same)`,
+      answer: brighter === 'Same'
+        ? textAns('same', ['the same', 'equal', 'same brightness', 'neither'])
+        : textAns(brighter.toLowerCase(), [`circuit ${brighter.toLowerCase()}`]),
       hint: 'More cells = a bigger push = brighter. More lamps in series = the push is shared out = dimmer.',
       working: [
         '<b>Picture:</b> the cells are the pump; every extra lamp in the loop is another squeeze on the pipe.',
@@ -310,11 +328,10 @@
     const n = R.int(2, 3);
     const comps = R.sample(['lamp', 'motor', 'buzzer', 'resistor', 'switch-closed'], n);
     const t = R.pick(comps);
-    const c = choice(SYMBOL_NAME[t], PART_NAMES, 4);
     return {
       visual: seriesSvg(comps, { caption: 'read the circuit diagram' }),
       prompt: `Look at this circuit diagram. Apart from the cell, name one component in it that ${PARTS.find((p) => p.name === SYMBOL_NAME[t]).job.replace(/^([a-z])/, '$1')}.`,
-      answer: ans(c),
+      answer: textAns(SYMBOL_NAME[t], PART_ACCEPT[SYMBOL_NAME[t]], 'one word'),
       hint: 'Match the job to the symbol: circle + cross = lamp, circle + M = motor, dome = buzzer, rectangle = resistor.',
       working: ['<b>Picture:</b> read each symbol along the top wire.', `The component that ${PARTS.find((p) => p.name === SYMBOL_NAME[t]).job} is the <b>${SYMBOL_NAME[t]}</b>.`],
       finalAnswer: SYMBOL_NAME[t], skill: 'symbols',
