@@ -662,7 +662,7 @@
           answer: numAns(A, 'm²'),
           hint: `The path goes on <b>both</b> sides, so the outside rectangle is ${N.fmt(2 * p)} m longer and ${N.fmt(2 * p)} m wider.`,
           steps: [
-            stepOf('Outside rectangle area', N.round(OL * OW, 2), 'm²', `(${l} + ${N.fmt(2 * p)}) × (${w} + ${N.fmt(2 * p)})`),
+            stepOf('Outside rectangle area', N.round(OL * OW, 2), 'm²', 'the path adds to both ends of each side'),
             stepOf(`The ${what}'s own area`, N.round(l * w, 2), 'm²', 'length × width'),
           ],
           working: [

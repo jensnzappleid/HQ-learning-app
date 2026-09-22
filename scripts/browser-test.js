@@ -42,7 +42,10 @@ const getJson = (u) => new Promise((res, rej) => http.get(u, (r) => { let d = ''
   const drawPadIfWord = async () => {
     if ((await ev(`HL.__current() && HL.__current().kind`)) !== 'word') return;
     const stepCount = await ev(`(HL.__current().steps || []).length`);
-    if (stepCount > 0) { for (let s = 0; s < stepCount; s++) await ev(`document.getElementById('step${s}').value = String(HL.__current().steps[${s}].value)`); }
+    if (stepCount > 0) { for (let s = 0; s < stepCount; s++) {
+      await ev(`document.getElementById('step${s}').value = String(HL.__current().steps[${s}].value)`);
+      await ev(`(function(){const u=document.getElementById('stepUnit${s}');if(u)u.value=HL.__current().steps[${s}].unit||'';})()`);
+    } }
     else await drawPad();
   };
   while (n < 30) {

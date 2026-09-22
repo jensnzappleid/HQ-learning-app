@@ -47,4 +47,12 @@ window.HL = window.HL || {};
     const tol = tolerance != null ? tolerance : 1e-6;
     return { ok: Math.abs(v - expected) <= tol + 1e-9 };
   };
+  /** she types the unit herself for a working-out step (m vs m², m vs cm) instead of it being
+   *  shown — "²" has no easy key, so "m2" and "m²" are treated the same. */
+  HL.mark.checkUnit = function (raw, expected) {
+    const norm = (s) => String(s || '').trim().toLowerCase().replace(/²/g, '2').replace(/\s+/g, '');
+    const r = norm(raw);
+    if (!r) return { ok: false, empty: true };
+    return { ok: r === norm(expected) };
+  };
 })(window.HL);

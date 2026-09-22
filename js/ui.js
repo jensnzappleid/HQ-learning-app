@@ -441,7 +441,7 @@ window.HL = window.HL || {};
           <label for="step${i}">Step ${i + 1} — ${esc(s.label)}</label>
           <div class="step-input-row">
             <input id="step${i}" class="answer-input step-input" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="?">
-            ${s.unit ? `<span class="unit">${esc(s.unit)}</span>` : ''}
+            ${s.unit ? `<input id="stepUnit${i}" class="answer-input step-unit-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="unit">` : ''}
             <span class="step-mark" id="stepMark${i}"></span>
           </div>
           ${s.hint ? `<div class="step-hint">💡 ${esc(s.hint)}</div>` : ''}
@@ -647,8 +647,8 @@ window.HL = window.HL || {};
     if (needsWorking(q)) {
       const hasSteps = q.steps && q.steps.length > 0;
       if (hasSteps) {
-        const empty = q.steps.some((s, i) => !(($(`#step${i}`) || {}).value || '').trim());
-        if (empty) { toast('Fill in every step first, then check.'); return; }
+        const empty = q.steps.some((s, i) => !(($(`#step${i}`) || {}).value || '').trim() || (s.unit && !(($(`#stepUnit${i}`) || {}).value || '').trim()));
+        if (empty) { toast('Fill in every step — number and unit — then check.'); return; }
       } else if (!padHasInk) {
         toast('Show your working on the pad first, then check.'); return;
       }
@@ -656,7 +656,10 @@ window.HL = window.HL || {};
       session.pendingWorking = canvas ? canvas.toDataURL('image/png') : '';
       session.pendingSteps = hasSteps ? q.steps.map((s, i) => {
         const given = (($(`#step${i}`) || {}).value || '').trim();
-        return { label: s.label, unit: s.unit || '', given, expected: s.value, ok: HL.mark.checkStep(given, s.value, s.tolerance).ok };
+        const givenUnit = (($(`#stepUnit${i}`) || {}).value || '').trim();
+        const numOk = HL.mark.checkStep(given, s.value, s.tolerance).ok;
+        const unitOk = !s.unit || HL.mark.checkUnit(givenUnit, s.unit).ok;
+        return { label: s.label, unit: s.unit || '', given, givenUnit, expected: s.value, numOk, unitOk, ok: numOk && unitOk };
       }) : [];
       lastStepResults = session.pendingSteps;
     }
@@ -670,11 +673,12 @@ window.HL = window.HL || {};
    *  which step went wrong instead of just "the answer was wrong" */
   function markSteps() {
     lastStepResults.forEach((r, i) => {
-      const mark = $(`#stepMark${i}`), inp = $(`#step${i}`);
+      const mark = $(`#stepMark${i}`), inp = $(`#step${i}`), unitInp = $(`#stepUnit${i}`);
       if (!mark) return;
       if (r.ok) { mark.textContent = '✓'; mark.className = 'step-mark ok'; }
       else { mark.textContent = `✗ → ${N.fmt(r.expected)}${r.unit ? ' ' + r.unit : ''}`; mark.className = 'step-mark bad'; }
-      if (inp) inp.classList.add(r.ok ? 'ok' : 'bad');
+      if (inp) inp.classList.add(r.numOk === false ? 'bad' : 'ok');
+      if (unitInp) unitInp.classList.add(r.unitOk === false ? 'bad' : 'ok');
     });
   }
   function showFeedback(res) {
@@ -844,7 +848,7 @@ window.HL = window.HL || {};
       <div class="m-row"><span class="m-label">Answer</span><span class="m-answer">${m.answer}</span></div>
       ${(m.shownSteps || []).length ? `<div class="steps-box" style="margin:10px 0 0">${m.shownSteps.map((r) => `
         <div class="step-item"><label>${esc(r.label)}</label><div class="step-input-row">
-          <span>${esc(r.given) || '—'}${r.unit ? ' ' + esc(r.unit) : ''}</span>
+          <span>${esc(r.given) || '—'}${r.givenUnit ? ' ' + esc(r.givenUnit) : ''}</span>
           <span class="step-mark ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : `✗ → ${N.fmt(r.expected)}${r.unit ? ' ' + esc(r.unit) : ''}`}</span>
         </div></div>`).join('')}</div>` : ''}
       ${m.shownWorking ? `<div class="her-working"><span class="m-label">Her working</span><img src="${m.shownWorking}" alt="Her working, drawn on the pad"></div>` : ''}
