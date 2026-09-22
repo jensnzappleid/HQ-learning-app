@@ -208,12 +208,11 @@
   function removeLamp() {
     const isParallel = R.chance(0.5);
     const correct = isParallel ? 'It stays on, just the same' : 'It goes out too';
+    const c = choice(correct, ['It goes out too', 'It stays on, just the same', 'It gets brighter and then breaks', 'It flashes on and off'], 4);
     return {
       visual: isParallel ? parallelSvg({ labels: true, caption: 'two lamps in parallel' }) : seriesSvg(['lamp', 'lamp'], { labels: true, caption: 'two lamps in series' }),
-      prompt: `In this circuit, <b>lamp 1 is taken out</b>. What happens to lamp 2? (stays on / goes out)`,
-      answer: isParallel
-        ? textAns('stays on', ['stays the same', 'same', 'on', 'still on', 'stays lit'], 'stays on / goes out')
-        : textAns('goes out', ['turns off', 'off', 'goes off', 'goes out too', 'stops'], 'stays on / goes out'),
+      prompt: `In this circuit, <b>lamp 1 is taken out</b>. What happens to lamp 2?`,
+      answer: ans(c),
       hint: isParallel ? 'In parallel, each lamp has its own complete loop back to the cell.' : 'In series there is only one loop — break it anywhere and the whole thing stops.',
       working: [
         '<b>Picture:</b> series = one single-lane road; parallel = two separate lanes.',
@@ -229,10 +228,11 @@
     const willLight = kind === 'closed' || kind === 'ok';
     const top = kind === 'open' ? ['lamp', 'switch-open'] : kind === 'closed' ? ['lamp', 'switch-closed'] : ['lamp'];
     const vis = seriesSvg(top, { broken: kind === 'broken', caption: 'will the lamp light?' });
+    const c = choice(willLight ? 'Yes — the circuit is complete' : 'No — the circuit is not complete', ['Yes — the circuit is complete', 'No — the circuit is not complete'], 2);
     return {
       visual: vis,
-      prompt: 'Look at the circuit. Will the lamp light up? (yes / no)',
-      answer: textAns(willLight ? 'yes' : 'no'),
+      prompt: 'Look at the circuit. Will the lamp light up?',
+      answer: ans(c),
       hint: 'Trace your finger all the way round from one end of the cell back to the other. Any gap at all and nothing flows.',
       working: [
         '<b>Picture:</b> the current is like water in a loop of pipe — one gap and the whole flow stops.',
@@ -262,13 +262,13 @@
     { p: 'What unit is <b>voltage</b> measured in?', a: 'volts', accept: ['volt', 'v'], full: 'volts (V)' },
     { p: 'Which instrument measures current?', a: 'ammeter', accept: ['an ammeter', 'amp meter'], full: 'an ammeter' },
     { p: 'Which instrument measures voltage?', a: 'voltmeter', accept: ['a voltmeter', 'volt meter'], full: 'a voltmeter' },
-    { p: 'What does a <b>resistor</b> do to the current?', a: 'smaller', accept: ['makes it smaller', 'decreases it', 'reduces it', 'less'], full: 'Makes it smaller' },
   ];
   const CV_CHOICE = [
     { p: 'What is an electric <b>current</b>?', a: 'A flow of charge (electrons) round the circuit', w: ['The push that makes charge flow', 'The energy stored in the cell', 'The heat made by the wires'] },
     { p: 'What is <b>voltage</b>?', a: 'The push the cell gives to the current', w: ['The flow of charge itself', 'The number of lamps', 'The resistance of the wire'] },
     { p: 'You add a second cell to a circuit with one lamp. What happens?', a: 'A bigger push, so more current and a brighter lamp', w: ['A smaller current and a dimmer lamp', 'Nothing changes', 'The lamp goes out'] },
     { p: 'You add a second lamp <b>in series</b> with the first. What happens?', a: 'Both lamps are dimmer — the current is shared round one loop', w: ['Both lamps get brighter', 'Nothing changes', 'Only the first lamp lights'] },
+    { p: 'What does a <b>resistor</b> do to the current?', a: 'Makes it smaller', w: ['Makes it bigger', 'Stops it completely', 'Changes it into voltage'] },
     { p: 'Which way does a circuit have to be for a current to flow?', a: 'A complete loop with no gaps', w: ['Any shape, gaps are fine', 'A straight line', 'It must have two cells'] },
   ];
   function currentVoltage() {
@@ -309,11 +309,10 @@
     const other = { cells: R.int(1, 3), lamps: R.int(1, 3) };
     while (other.cells === cells && other.lamps === lamps) other.lamps = R.int(1, 3);
     const brighter = (cells / lamps) > (other.cells / other.lamps) ? 'A' : (cells / lamps) < (other.cells / other.lamps) ? 'B' : 'Same';
+    const c = choice(brighter === 'A' ? 'Circuit A' : brighter === 'B' ? 'Circuit B' : 'They are the same brightness', ['Circuit A', 'Circuit B', 'They are the same brightness'], 3);
     return {
-      prompt: `Circuit A: <b>${cells} cell${cells > 1 ? 's' : ''}</b> and <b>${lamps} lamp${lamps > 1 ? 's' : ''}</b> in series. Circuit B: <b>${other.cells} cell${other.cells > 1 ? 's' : ''}</b> and <b>${other.lamps} lamp${other.lamps > 1 ? 's' : ''}</b> in series. Which lamps are brighter? (A / B / same)`,
-      answer: brighter === 'Same'
-        ? textAns('same', ['the same', 'equal', 'same brightness', 'neither'])
-        : textAns(brighter.toLowerCase(), [`circuit ${brighter.toLowerCase()}`]),
+      prompt: `Circuit A: <b>${cells} cell${cells > 1 ? 's' : ''}</b> and <b>${lamps} lamp${lamps > 1 ? 's' : ''}</b> in series. Circuit B: <b>${other.cells} cell${other.cells > 1 ? 's' : ''}</b> and <b>${other.lamps} lamp${other.lamps > 1 ? 's' : ''}</b> in series. Which lamps are brighter?`,
+      answer: ans(c),
       hint: 'More cells = a bigger push = brighter. More lamps in series = the push is shared out = dimmer.',
       working: [
         '<b>Picture:</b> the cells are the pump; every extra lamp in the loop is another squeeze on the pipe.',
