@@ -173,6 +173,10 @@ sup { font-size: .7em; }
 .q-visual table, .q-visual .kv { margin: 0 auto; }
 .prompt { font-size: 1.45rem; font-weight: 800; line-height: 1.45; }
 .prompt .frac, .working .frac, .example-box .frac, .prompt .mixed { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 4px; font-size: .9em; }
+.hl-word { cursor: pointer; border-radius: 4px; padding: 0 2px; margin: 0 -2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.hl-word.on { background: rgba(255, 209, 46, .6); }
+:root[data-theme="dark"] .hl-word.on { background: rgba(255, 209, 46, .4); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word.on { background: rgba(255, 209, 46, .4); } }
 .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 3px; }
 .frac-n { border-bottom: 2px solid currentColor; padding: 0 4px; }
 .frac-d { padding: 0 4px; }
@@ -455,7 +459,10 @@ input.text { font: inherit; font-weight: 800; padding: 10px 14px; border-radius:
 .padtool.on[data-pad="fix"] { border-color: var(--good); color: var(--good); background: var(--good-soft); }
 .padtool.on[data-pad="eraser"] { border-color: var(--muted); color: var(--ink); background: var(--surface-2); }
 .workpad { display: block; width: 100%; max-width: 100%; height: 170px; border-radius: var(--r-md);
-  border: 3px solid var(--line); background: var(--surface); touch-action: none; cursor: crosshair; }
+  border: 3px solid var(--line); background-color: var(--surface); touch-action: none; cursor: crosshair;
+  /* squared paper, so numbers line up in columns when she is adding/multiplying by hand */
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 26px 26px; }
 .workpad.joinpad { height: 260px; }
 .working-empty-hint { margin-top: 4px; font-size: .78rem; color: var(--faint); }
 .sync-chip { margin: 8px 0 6px; font-size: .8rem; color: var(--muted); background: var(--surface-2);

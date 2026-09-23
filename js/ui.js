@@ -482,6 +482,7 @@ window.HL = window.HL || {};
       <p class="footer-note">${q.isRedo ? 'Practice question' : `Question ${session.scoredCount + 1} of ${session.target}`} · ${session.timeUp ? (session.shortBy() ? `${session.shortBy()} more to earn candies` : 'last one') : Math.ceil(session.remainingMs / 60000) + ' min left'}</p>
     </div>`);
     if (needsWorking(q)) bindWorkpad();
+    wrapPromptWords();
     const inp = $('#ans'); if (inp && !st.keypad) setTimeout(() => inp.focus(), 50);
     if (timer) clearInterval(timer);
     timer = setInterval(() => {
@@ -495,6 +496,30 @@ window.HL = window.HL || {};
         toast(short > 1 ? `Time is up — ${short} more questions so this practice counts.` : 'Time is up — finish this one and we will stop.');
       }
     }, 1000);
+  }
+  /* ---------- highlight important words in the question ----------
+   * She can tap any word in the prompt to mark it, like a highlighter pen — for spotting the
+   * numbers and key words in a word problem before she starts. Wraps every word of #prompt's text
+   * in its own tappable span (leaving existing markup like <b> intact), fresh on every question so
+   * marks never carry over to the next one. */
+  function wrapPromptWords() {
+    const el = $('#prompt'); if (!el) return;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = []; let n; while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach((node) => {
+      const text = node.nodeValue;
+      if (!text || !text.trim()) return;
+      const frag = document.createDocumentFragment();
+      text.split(/(\s+)/).forEach((tok) => {
+        if (!tok) return;
+        if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); return; }
+        const span = document.createElement('span');
+        span.className = 'hl-word';
+        span.textContent = tok;
+        frag.appendChild(span);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
   }
   function keypadHtml(type) {
     const keys = ['7', '8', '9', '⌫', '4', '5', '6', '−', '1', '2', '3', '/', '.', '0', '␣', 'C'];
@@ -1075,6 +1100,8 @@ window.HL = window.HL || {};
   document.addEventListener('click', (e) => {
     const mixCard = e.target.closest('[data-mix]');
     if (mixCard) { HL.sound.unlock(); mixToggle(mixCard.dataset.mix); return topics('mix'); }
+    const hw = e.target.closest('.hl-word');
+    if (hw) { hw.classList.toggle('on'); return; }
     const b = e.target.closest('[data-go],[data-act],[data-key],[data-choice],[data-go-learn],[data-eg],[data-setting] button');
     if (!b) return;
     if (b.dataset.eg) { const id = (location.hash.split('/')[1] || ''); return liveExample(id, b.dataset.eg); }
