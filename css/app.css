@@ -174,9 +174,7 @@ sup { font-size: .7em; }
 .prompt { font-size: 1.45rem; font-weight: 800; line-height: 1.45; }
 .prompt .frac, .working .frac, .example-box .frac, .prompt .mixed { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 4px; font-size: .9em; }
 .hl-word { cursor: pointer; border-radius: 4px; padding: 0 2px; margin: 0 -2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-.hl-word.on { background: rgba(255, 209, 46, .6); }
-:root[data-theme="dark"] .hl-word.on { background: rgba(255, 209, 46, .4); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word.on { background: rgba(255, 209, 46, .4); } }
+.hl-word.on { text-decoration: underline; text-decoration-color: #FF9800; text-decoration-thickness: 4px; text-underline-offset: 4px; text-decoration-skip-ink: none; }
 .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 3px; }
 .frac-n { border-bottom: 2px solid currentColor; padding: 0 4px; }
 .frac-d { padding: 0 4px; }

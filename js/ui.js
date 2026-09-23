@@ -13,10 +13,11 @@ window.HL = window.HL || {};
   const prize = () => S.settings().prize || '$5';
   const name = () => S.settings().name || 'Harper';
   const isSci = () => HL.subject === 'science';
-  /** the working pad (and its guided hint) is a maths thing — showing your algebra/arithmetic
-   *  steps. A science "word problem" is a scenario question, not a calculation, so it gets none
-   *  of this: no pad, no hint, no Check gate. */
-  const needsWorking = (q) => q.kind === 'word' && !isSci();
+  /** the working pad is a maths thing — showing your algebra/arithmetic steps. A science
+   *  "word problem" is a scenario question, not a calculation, so it gets none of this: no pad,
+   *  no hint. Every maths question gets a pad, but it is always optional — Check never gates on
+   *  ink, only a stepped word problem's step boxes are ever required. */
+  const needsWorking = (q) => !isSci();
   const subjectWord = (n) => (n === 'science' ? 'Science' : 'Maths');
   /** the sibling app lives next to this one on the same address, so switching keeps the same
    *  browser storage (candy jars, money box, progress) — and the same child, via ?who= */
@@ -432,12 +433,16 @@ window.HL = window.HL || {};
     }
     let workingHtml = '';
     if (needsWorking(q)) {
-      const hasSteps = q.steps && q.steps.length > 0;
+      const isWordNoSteps = q.kind === 'word' && !(q.steps && q.steps.length);
+      const hasSteps = q.kind === 'word' && q.steps && q.steps.length > 0;
       // guided the first time she ever meets this idea (the hint, not the answer); every time
       // after that she gets no content, just a nudge for how many steps a full solution takes.
-      // Skipped entirely when the question has real step boxes — those already show what to do.
+      // Skipped entirely when the question has real step boxes (those already show what to do)
+      // and for plain calc questions (the pad there is just optional scratch space, not a method
+      // to be taught — nothing to nudge about). The pad itself is never required before Check,
+      // for any question — only a stepped word problem's step boxes are.
       const hintKey = q.skill || (q.topicId + ':word');
-      const guided = !hasSteps && !S.hintSeen(hintKey);
+      const guided = isWordNoSteps && !S.hintSeen(hintKey);
       const syncOn = HL.sync && HL.sync.available();
       const stepsHtml = hasSteps ? `<div class="steps-box" id="stepsBox">${q.steps.map((s, i) => `
         <div class="step-item">
@@ -449,9 +454,10 @@ window.HL = window.HL || {};
           </div>
           ${s.hint ? `<div class="step-hint">💡 ${esc(s.hint)}</div>` : ''}
         </div>`).join('')}</div>` : '';
+      const label = hasSteps ? 'Extra working (optional)' : isWordNoSteps ? 'Show your working' : 'Working space (optional)';
       workingHtml = `<div class="working-row">
         ${stepsHtml}
-        <div class="working-head"><label for="workpad">${hasSteps ? 'Extra working (optional)' : 'Show your working'}${!hasSteps && !guided ? `<span class="hint-note">(aim for about ${Math.max(1, (q.working || []).length)} steps)</span>` : ''}</label>
+        <div class="working-head"><label for="workpad">${label}${isWordNoSteps && !guided ? `<span class="hint-note">(aim for about ${Math.max(1, (q.working || []).length)} steps)</span>` : ''}</label>
           <div class="pad-tools">
             <button type="button" class="padtool on" data-pad="pen">✏️ Pen</button>
             <button type="button" class="padtool" data-pad="fix">🟢 Correct it</button>
@@ -535,7 +541,7 @@ window.HL = window.HL || {};
    * When a Firebase project is configured (HL.syncConfig), the SAME pad also mirrors live to
    * anyone who joins with this device's share code (see joinScreen()) — same drawing code either
    * way, the room is just an optional relay for the strokes. */
-  let padMode = 'pen', padHasInk = false;
+  let padMode = 'pen';
   function strokeStyleFor(mode) {
     const style = getComputedStyle(document.documentElement);
     const inkColor = (style.getPropertyValue('--ink') || '#333').trim() || '#333';
@@ -566,7 +572,7 @@ window.HL = window.HL || {};
     let drawing = false, lastX = 0, lastY = 0;
     const posFromEvent = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     canvas.addEventListener('pointerdown', (e) => {
-      drawing = true; if (padMode !== 'eraser') padHasInk = true;
+      drawing = true;
       [lastX, lastY] = posFromEvent(e);
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
       e.preventDefault();
@@ -588,7 +594,7 @@ window.HL = window.HL || {};
       btn.addEventListener('click', () => {
         if (btn.dataset.pad === 'clear') {
           if (room) room.sendClear(); else ctx.clearRect(0, 0, canvas.width, canvas.height);
-          padHasInk = false; return;
+          return;
         }
         padMode = btn.dataset.pad;
         document.querySelectorAll('.padtool').forEach((x) => x.classList.toggle('on', x.dataset.pad === padMode));
@@ -598,7 +604,7 @@ window.HL = window.HL || {};
   function bindWorkpad() {
     const canvas = $('#workpad'); if (!canvas) return;
     const ctx = sizeCanvas(canvas);
-    padMode = 'pen'; padHasInk = false;
+    padMode = 'pen';
     if (HL.sync && HL.sync.available()) {
       if (!room) room = HL.sync.connect(S.syncCode());
       if (room) {
@@ -673,12 +679,12 @@ window.HL = window.HL || {};
   function check() {
     const q = session.current; if (!q) return;
     if (needsWorking(q)) {
-      const hasSteps = q.steps && q.steps.length > 0;
+      // the pad itself is always optional scratch space — only a stepped word problem's step
+      // boxes are ever required before Check
+      const hasSteps = q.kind === 'word' && q.steps && q.steps.length > 0;
       if (hasSteps) {
         const empty = q.steps.some((s, i) => !(($(`#step${i}`) || {}).value || '').trim() || (s.unit && !(($(`#stepUnit${i}`) || {}).value || '').trim()));
         if (empty) { toast('Fill in every step — number and unit — then check.'); return; }
-      } else if (!padHasInk) {
-        toast('Show your working on the pad first, then check.'); return;
       }
       const canvas = $('#workpad');
       session.pendingWorking = canvas ? canvas.toDataURL('image/png') : '';
