@@ -555,4 +555,100 @@ window.HL = window.HL || {};
     import(json) { return this.importAll(json); },
   };
   HL.store = S;
+
+  /* ---------- copy for the parent's weekly report ----------
+   * Every finished practice is also written to the app's Firebase database, under
+   * reports/<profile>/<subject>/, so a parent can see the week without holding Harper's device.
+   * Purely additive: nothing here changes how practice, candies or prizes work. The database
+   * rules make this path write-only for the app (only the parent's own Google sign-in can read
+   * it back, and nothing here can be deleted from the app). If Firebase is not
+   * reachable, practice carries on as before and the unsent practices go up next time. */
+  (function reportCopy() {
+    const SENT_KEY = 'harper-learning-report-sent-v1-' + SUBJECT + suffix;
+    const STATE_KEY = 'harper-learning-report-state-v1-' + SUBJECT + suffix;
+    const readList = () => { try { const l = JSON.parse(readRaw(SENT_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } };
+    /** question html -> readable text: fractions as 3/4, powers as x^2, tags dropped */
+    const plain = (h) => String(h == null ? '' : h)
+      .replace(/<span class="frac-n">(.*?)<\/span>\s*<span class="frac-d">(.*?)<\/span>/g, '$1/$2')
+      .replace(/<sup>(.*?)<\/sup>/g, '^$1')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ').trim().slice(0, 600);
+    const topicName = (id) => (HL.topics && HL.topics[id] && HL.topics[id].name) || id;
+    const safeKey = (k) => String(k).replace(/[^A-Za-z0-9_-]/g, '-');   // database keys cannot hold . # $ [ ] /
+    const base = () => 'reports/' + safeKey(PROFILE) + '/' + SUBJECT;
+    const docId = (s) => safeKey(String(s.date));
+    const sessionDoc = (s) => {
+      const total = Number(s.total) || 0, firstTry = Number(s.firstTry) || 0;
+      return {
+        profile: PROFILE, name: data.settings.name || '', subject: SUBJECT, date: String(s.date),
+        mode: s.mode || '', label: plain(s.label), total, correct: Number(s.correct) || 0, firstTry,
+        percent: total ? Math.round(firstTry / total * 100) : 0, minutes: Number(s.minutes) || 0,
+        topics: (s.topics || []).map((id) => {
+          const t = (s.byTopic && s.byTopic[id]) || {};
+          return { id, name: topicName(id), total: Number(t.total) || 0, correct: Number(t.correct) || 0, firstTry: Number(t.firstTry) || 0 };
+        }),
+        candies: Number(s.candies) || 0, prize: s.reward ? String(s.reward.prize || '') : '',
+        mistakesKept: Array.isArray(s.mistakes),
+        mistakes: (s.mistakes || []).map((m) => ({
+          topic: m.topicName || topicName(m.topicId), question: plain(m.prompt), given: plain(m.given),
+          answer: plain(m.answer), gotThere: !!m.gotThere, flagged: !!m.flagged,
+        })),
+      };
+    };
+    const stateDoc = () => {
+      const topics = {};
+      Object.keys(data.topics || {}).forEach((id) => {
+        const t = data.topics[id];
+        topics[safeKey(id)] = { id, name: topicName(id), attempts: t.attempts || 0, firstTry: t.firstTry || 0, mastery: t.mastery || 0, lastPractised: t.lastPractised || '' };
+      });
+      return {
+        profile: PROFILE, name: data.settings.name || '', subject: SUBJECT,
+        prize: data.settings.prize || '', candyGoal: data.settings.candyGoal || 9,
+        candy: { jar: data.candy.jar || 0, lifetime: data.candy.lifetime || 0, earned: (data.candy.earned || []).map((r) => ({ date: String(r.date || ''), prize: String(r.prize || ''), paid: !!r.paid })) },
+        streak: S.streak(), topics,
+      };
+    };
+    let db = null, busy = false, again = false;
+    async function flush() {
+      if (!db) return;
+      if (busy) { again = true; return; }
+      busy = true;
+      try {
+        const done = new Set(readList());
+        const todo = (data.sessions || []).filter((s) => s && s.date && !done.has(docId(s))).reverse();   // oldest first
+        for (const s of todo) {
+          await db.ref(base() + '/sessions/' + docId(s)).set(sessionDoc(s));
+          done.add(docId(s));
+          try { localStorage.setItem(SENT_KEY, JSON.stringify(Array.from(done).slice(-500))); } catch (e) {}
+          if (todo.length > 1) await new Promise((r) => setTimeout(r, 250));   // a backlog goes up gently
+        }
+        const st = stateDoc(), body = JSON.stringify(st);
+        if (body !== readRaw(STATE_KEY)) {
+          await db.ref(base() + '/state').set(Object.assign({ updatedAt: new Date().toISOString() }, st));
+          try { localStorage.setItem(STATE_KEY, body); } catch (e) {}
+        }
+      } catch (e) { /* offline or Firebase unavailable: the next practice tries again */ }
+      busy = false;
+      if (again) { again = false; flush(); }
+    }
+    const after = (name) => {
+      const orig = S[name];
+      S[name] = function () { const r = orig.apply(this, arguments); setTimeout(flush, 0); return r; };
+    };
+    after('saveSession'); after('markRewardPaid');
+    // Firebase loads after this file. HL.sync.available() sets it up once for the whole app and
+    // only tries once, so never call it before the Firebase scripts are in (or the pad breaks too).
+    let tries = 0;
+    function connect() {
+      try {
+        if (window.firebase && HL.sync) {
+          if (HL.sync.available()) { db = firebase.database(); flush(); }
+          return;
+        }
+      } catch (e) { return; }
+      if (++tries < 6) setTimeout(connect, 1500 * tries);
+    }
+    setTimeout(connect, 0);
+  })();
 })(window.HL);
