@@ -634,7 +634,7 @@ window.HL = window.HL || {};
     }
     const after = (name) => {
       const orig = S[name];
-      S[name] = function () { const r = orig.apply(this, arguments); setTimeout(flush, 0); return r; };
+      S[name] = function () { const r = orig.apply(this, arguments); if (typeof setTimeout === 'function') setTimeout(flush, 0); return r; };
     };
     after('saveSession'); after('markRewardPaid');
     // Firebase loads after this file. HL.sync.available() sets it up once for the whole app and
@@ -649,6 +649,6 @@ window.HL = window.HL || {};
       } catch (e) { return; }
       if (++tries < 6) setTimeout(connect, 1500 * tries);
     }
-    setTimeout(connect, 0);
+    if (typeof setTimeout === 'function') setTimeout(connect, 0);   // the node test harnesses have no timers
   })();
 })(window.HL);
