@@ -610,22 +610,41 @@ window.HL = window.HL || {};
       };
     };
     let db = null, busy = false, again = false;
+    const APP_VERSION = 'report-2';
+    // JSON round trip drops undefined values, which Firebase refuses outright (the whole write fails)
+    const clean = (o) => JSON.parse(JSON.stringify(o));
+    // a write that never hears back (blocked socket) must not freeze every later upload
+    const put = (path, val) => Promise.race([
+      db.ref(path).set(clean(val)),
+      new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 20000)),
+    ]);
+    const why = (e) => String((e && (e.code || e.message)) || e).slice(0, 200);
     async function flush() {
       if (!db) return;
       if (busy) { again = true; return; }
       busy = true;
+      const errors = [];
+      let sent = 0;
       try {
         const done = new Set(readList());
         const todo = (data.sessions || []).filter((s) => s && s.date && !done.has(docId(s))).reverse();   // oldest first
         for (const s of todo) {
-          await db.ref(base() + '/sessions/' + docId(s)).set(sessionDoc(s));
-          done.add(docId(s));
-          try { localStorage.setItem(SENT_KEY, JSON.stringify(Array.from(done).slice(-500))); } catch (e) {}
+          // one practice that will not go up must not hold back the others
+          try {
+            await put(base() + '/sessions/' + docId(s), sessionDoc(s));
+            done.add(docId(s)); sent++;
+            try { localStorage.setItem(SENT_KEY, JSON.stringify(Array.from(done).slice(-500))); } catch (e) {}
+          } catch (e) { errors.push(docId(s) + ': ' + why(e)); if (/timeout|disconnect/i.test(why(e))) break; }
           if (todo.length > 1) await new Promise((r) => setTimeout(r, 250));   // a backlog goes up gently
         }
-        const st = stateDoc(), body = JSON.stringify(st);
+      } catch (e) { errors.push('sessions: ' + why(e)); }
+      try {
+        // the state always goes up (with what went wrong), so a parent can tell "not practising" from "not uploading"
+        const st = stateDoc(), body = JSON.stringify(st) + errors.join('|');
         if (body !== readRaw(STATE_KEY)) {
-          await db.ref(base() + '/state').set(Object.assign({ updatedAt: new Date().toISOString() }, st));
+          const pending = (data.sessions || []).filter((s) => s && s.date).length - readList().length;
+          await put(base() + '/state', Object.assign({ updatedAt: new Date().toISOString(), appVersion: APP_VERSION,
+            sessionsKept: (data.sessions || []).length, sentNow: sent, notSent: Math.max(0, pending), errors: errors.slice(0, 5) }, st));
           try { localStorage.setItem(STATE_KEY, body); } catch (e) {}
         }
       } catch (e) { /* offline or Firebase unavailable: the next practice tries again */ }
