@@ -141,6 +141,34 @@ window.HL = window.HL || {};
   }
 
   /* ---------- money box screen ---------- */
+  /** every prize from both subjects, grouped by the day it was won (newest day first) */
+  function earningsByDay() {
+    const mine = (S.candyState().earned || []).map((r) => Object.assign({}, r, { subject: HL.subject }));
+    const others = S.otherJars().flatMap((o) => (o.earned || []).map((r) => Object.assign({}, r, { subject: o.subject })));
+    const days = {};
+    mine.concat(others).forEach((r) => {
+      const d = new Date(r.date);
+      if (isNaN(d)) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      (days[key] = days[key] || { key, date: d, items: [] }).items.push(r);
+    });
+    return Object.values(days).sort((a, b) => (a.key < b.key ? 1 : -1));
+  }
+  function earningsByDayHtml() {
+    const days = earningsByDay();
+    if (!days.length) return '';
+    const label = (d) => d.toLocaleDateString('en-NZ', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    return `<div class="card"><h2>Money won, day by day</h2>
+      <div class="result-list" style="margin-top:8px">${days.map((day) => {
+        const m = S.tallyPrizes(day.items);
+        const bySubject = ['maths', 'science'].map((sub) => {
+          const its = day.items.filter((r) => r.subject === sub);
+          return its.length ? `${subjectWord(sub)} ${esc(amount(S.tallyPrizes(its)))}` : '';
+        }).filter(Boolean).join(' \u00b7 ');
+        return `<div class="result-item"><span class="name">${esc(label(day.date))}<br><small style="color:var(--muted)">${bySubject}</small></span><b>${esc(amount(m))}</b></div>`;
+      }).join('')}</div></div>`;
+  }
+
   function money() {
     const { rows, total, mine } = moneyRows();
     const earned = S.candyState().earned || [];
@@ -167,6 +195,7 @@ window.HL = window.HL || {};
           <div><b>${esc(S.formatMoney(total.waiting))}</b><span>still to collect</span></div>
         </div>` : ''}
       </div>
+      ${earningsByDayHtml()}
       <div class="card"><h2>${jarTitle().replace(' candy jar', '')} prizes</h2>
         ${earned.length ? `<div class="result-list" style="margin-top:8px">${earned.map((r, i) => `<div class="result-item">${HL.coin(i, 26)}<span class="name">${esc(r.prize)}<br><small style="color:var(--muted)">${new Date(r.date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}</small></span><span class="chip ${r.paid ? 'chip-mint' : 'chip-butter'}">${r.paid ? 'collected \u2713' : 'waiting'}</span><button class="btn" style="min-height:38px;padding:6px 12px" data-act="paid" data-i="${i}">${r.paid ? 'Undo' : 'Mark collected'}</button></div>`).join('')}</div>`
           : `<p style="margin-top:6px;color:var(--muted)">No ${subjectWord(HL.subject).toLowerCase()} prizes yet.</p>`}
