@@ -1,5 +1,5 @@
 /* Shared question engine for the Year 8 Cosmology topics (space-*.js).
- * Not a topic itself. The file name starts with "_" so it loads before the topics that use it
+ * Not a topic itself. The file name sorts first among space-* so it loads before the topics that use it
  * (the page lists it first, and the node checker loads files in name order).
  *
  * A space topic is mostly a fact bank:
